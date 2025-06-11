@@ -1,5 +1,6 @@
 import React, { forwardRef } from "react";
 import { Timer, Link2, RotateCcw, Trophy, CheckCircle, ArrowRight } from "lucide-react";
+import { getCategoryImageUrl } from "@/config/assets";
 
 interface GridSquare {
   id: number;
@@ -78,7 +79,7 @@ const colorToImage: { [key: string]: string } = {
 };
 
 function getSwitchImageSrc(outputColor: string) {
-  return `/assets/images/categories/${colorToImage[outputColor] || "switch-default.png"}`;
+  return getCategoryImageUrl(colorToImage[outputColor] || "switch-default.png");
 }
 
 const GridCell: React.FC<GridCellProps> = ({ 

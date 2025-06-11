@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "homepage": "https://astoyanov2231.github.io/puzzle-portal-bulgaria",
+  "homepage": "https://astoyanov2231.github.io/InteractivePuzzle",
   "scripts": {
     "dev": "vite",
     "build": "vite build",

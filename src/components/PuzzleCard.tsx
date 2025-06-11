@@ -1,4 +1,5 @@
 import { PuzzleCategory } from "@/types";
+import { getCategoryImageUrl } from "@/config/assets";
 
 interface PuzzleCardProps {
   category: PuzzleCategory;
@@ -7,7 +8,7 @@ interface PuzzleCardProps {
 }
 
 export const PuzzleCard = ({ category, onClick, className }: PuzzleCardProps) => {
-  const imageUrl = `/assets/images/categories/${category.icon}`;
+  const imageUrl = getCategoryImageUrl(category.icon);
 
   return (
     <div
@@ -28,3 +29,4 @@ export const PuzzleCard = ({ category, onClick, className }: PuzzleCardProps) =>
     </div>
   );
 };
+  
