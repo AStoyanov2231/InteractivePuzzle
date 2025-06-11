@@ -2,6 +2,9 @@ import { ArrowRight, Shuffle, Users, UserPlus, Trophy, Crown } from "lucide-reac
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { TouchDragProvider } from "@/components/ui/TouchDragProvider";
+import { TouchDraggable } from "@/components/ui/TouchDraggable";
+import { TouchDropTarget } from "@/components/ui/TouchDropTarget";
 import { useState } from "react";
 
 interface TeamPlayer {
@@ -32,46 +35,14 @@ export function TeamDisplay({
   onDragStart, 
   onDrop 
 }: TeamDisplayProps) {
-  const [touchDraggedPlayer, setTouchDraggedPlayer] = useState<{ teamId: string; playerId: string } | null>(null);
   const [dragOverTarget, setDragOverTarget] = useState<{ teamId: string; playerId?: string } | null>(null);
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
   };
 
-  const handleTouchStart = (teamId: string, playerId: string) => {
-    setTouchDraggedPlayer({ teamId, playerId });
-    onDragStart(teamId, playerId);
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    e.preventDefault();
-    const touch = e.touches[0];
-    const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
-    
-    if (elementBelow) {
-      const teamElement = elementBelow.closest('[data-team-id]');
-      const playerElement = elementBelow.closest('[data-player-id]');
-      
-      if (teamElement) {
-        const teamId = teamElement.getAttribute('data-team-id');
-        const playerId = playerElement?.getAttribute('data-player-id');
-        
-        if (teamId) {
-          setDragOverTarget({ teamId, playerId: playerId || undefined });
-        }
-      } else {
-        setDragOverTarget(null);
-      }
-    }
-  };
-
-  const handleTouchEnd = () => {
-    if (touchDraggedPlayer && dragOverTarget) {
-      onDrop(dragOverTarget.teamId, dragOverTarget.playerId);
-    }
-    setTouchDraggedPlayer(null);
-    setDragOverTarget(null);
+  const handleTouchDrop = (draggedItem: any, targetData: any) => {
+    onDrop(targetData.teamId, targetData.playerId);
   };
 
   if (teams.length === 0) {
@@ -103,28 +74,29 @@ export function TeamDisplay({
   ];
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-yellow-500 to-orange-500 flex items-center justify-center shadow-md">
-            <Trophy className="w-5 h-5 text-white" />
+    <TouchDragProvider onDrop={handleTouchDrop}>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-yellow-500 to-orange-500 flex items-center justify-center shadow-md">
+              <Trophy className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-800">Отбори ({teams.length})</h3>
+            </div>
           </div>
-          <div>
-            <h3 className="text-lg font-semibold text-gray-800">Отбори ({teams.length})</h3>
-          </div>
+          
+          <Button 
+            variant="outline" 
+            onClick={onResetTeams}
+            className="bg-white/60 backdrop-blur-sm border-white/50 hover:bg-white/70 text-gray-700 rounded-xl"
+          >
+            <Shuffle className="mr-2 h-4 w-4" />
+            Разбъркай
+          </Button>
         </div>
         
-        <Button 
-          variant="outline" 
-          onClick={onResetTeams}
-          className="bg-white/60 backdrop-blur-sm border-white/50 hover:bg-white/70 text-gray-700 rounded-xl"
-        >
-          <Shuffle className="mr-2 h-4 w-4" />
-          Разбъркай
-        </Button>
-      </div>
-      
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4" style={{ touchAction: 'none' }}>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4" style={{ touchAction: 'none' }}>
         {teams.map((team, teamIndex) => {
           const colors = teamColors[teamIndex] || teamColors[0];
           
@@ -153,64 +125,70 @@ export function TeamDisplay({
                 {/* Players */}
                 <div className="p-4 space-y-3 min-h-[200px]">
                   {team.players.map((player, playerIndex) => (
-                    <div 
+                    <TouchDropTarget
                       key={player.id}
-                      data-player-id={player.id}
-                      className={`group flex items-center justify-between p-3 rounded-lg transition-all duration-200 cursor-grab select-none ${
-                        (draggedPlayer?.playerId === player.id || touchDraggedPlayer?.playerId === player.id)
-                          ? 'opacity-50 bg-gray-100 border-2 border-dashed border-gray-400 scale-105' 
-                          : `${colors.bg} hover:bg-opacity-80 border-2 ${colors.border} hover:shadow-md`
-                      } ${
-                        dragOverTarget?.playerId === player.id ? 'ring-2 ring-blue-400 ring-opacity-50' : ''
-                      }`}
-                      draggable
-                      onDragStart={() => onDragStart(team.id, player.id)}
-                      onDrop={(e) => {
-                        e.stopPropagation();
-                        onDrop(team.id, player.id);
-                      }}
-                      onDragOver={handleDragOver}
-                      onTouchStart={() => handleTouchStart(team.id, player.id)}
-                      onTouchMove={handleTouchMove}
-                      onTouchEnd={handleTouchEnd}
+                      targetData={{ teamId: team.id, playerId: player.id }}
+                      onDrop={handleTouchDrop}
+                      activeClassName="ring-2 ring-blue-400 ring-opacity-50"
                     >
-                      <div className="flex items-center gap-3">
-                        <div className={`w-7 h-7 rounded-lg bg-gradient-to-r ${colors.from} ${colors.to} flex items-center justify-center text-white text-sm font-bold`}>
-                          {playerIndex + 1}
+                      <TouchDraggable
+                        dragData={{
+                          id: player.id,
+                          data: { teamId: team.id, playerId: player.id },
+                          displayName: player.name
+                        }}
+                        onDragStart={() => onDragStart(team.id, player.id)}
+                        className={`group flex items-center justify-between p-3 rounded-lg transition-all duration-200 cursor-grab select-none ${
+                          draggedPlayer?.playerId === player.id
+                            ? 'opacity-50 bg-gray-100 border-2 border-dashed border-gray-400 scale-105' 
+                            : `${colors.bg} hover:bg-opacity-80 border-2 ${colors.border} hover:shadow-md`
+                        }`}
+                      >
+                        <div 
+                          data-player-id={player.id}
+                          draggable
+                          onDragStart={() => onDragStart(team.id, player.id)}
+                          onDrop={(e) => {
+                            e.stopPropagation();
+                            onDrop(team.id, player.id);
+                          }}
+                          onDragOver={handleDragOver}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className={`w-7 h-7 rounded-lg bg-gradient-to-r ${colors.from} ${colors.to} flex items-center justify-center text-white text-sm font-bold`}>
+                              {playerIndex + 1}
+                            </div>
+                            <span className="font-medium text-gray-800 truncate max-w-[100px]" title={player.name}>
+                              {player.name}
+                            </span>
+                          </div>
+                          <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-gray-600 transition-colors" />
                         </div>
-                        <span className="font-medium text-gray-800 truncate max-w-[100px]" title={player.name}>
-                          {player.name}
-                        </span>
-                      </div>
-                      <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-gray-600 transition-colors" />
-                    </div>
+                      </TouchDraggable>
+                    </TouchDropTarget>
                   ))}
                   
                   {/* Empty Slots */}
                   {Array.from({ length: 4 - team.players.length }).map((_, i) => (
-                    <div 
+                    <TouchDropTarget
                       key={`empty-${i}`}
-                      data-empty-slot={`${team.id}-${i}`}
-                      className={`flex items-center justify-center p-3 text-gray-400 bg-gray-50/80 rounded-lg border-2 border-dashed border-gray-300 hover:border-gray-400 hover:bg-gray-100/80 transition-all duration-200 min-h-[48px] ${
-                        dragOverTarget?.teamId === team.id && !dragOverTarget.playerId ? 'ring-2 ring-blue-400 ring-opacity-50 bg-blue-50' : ''
-                      }`}
-                      onDragOver={handleDragOver}
-                      onDrop={(e) => {
-                        e.stopPropagation();
-                        onDrop(team.id);
-                      }}
-                      onTouchEnd={(e) => {
-                        if (touchDraggedPlayer) {
+                      targetData={{ teamId: team.id, playerId: undefined }}
+                      onDrop={handleTouchDrop}
+                      activeClassName="ring-2 ring-blue-400 ring-opacity-50 bg-blue-50"
+                      className="flex items-center justify-center p-3 text-gray-400 bg-gray-50/80 rounded-lg border-2 border-dashed border-gray-300 hover:border-gray-400 hover:bg-gray-100/80 transition-all duration-200 min-h-[48px]"
+                    >
+                      <div 
+                        data-empty-slot={`${team.id}-${i}`}
+                        onDragOver={handleDragOver}
+                        onDrop={(e) => {
                           e.stopPropagation();
                           onDrop(team.id);
-                          setTouchDraggedPlayer(null);
-                          setDragOverTarget(null);
-                        }
-                      }}
-                    >
-                      <Users className="w-4 h-4 mr-2" />
-                      <span className="text-sm font-medium">Празно място</span>
-                    </div>
+                        }}
+                      >
+                        <Users className="w-4 h-4 mr-2" />
+                        <span className="text-sm font-medium">Празно място</span>
+                      </div>
+                    </TouchDropTarget>
                   ))}
                 </div>
               </CardContent>
@@ -219,5 +197,6 @@ export function TeamDisplay({
         })}
       </div>
     </div>
+    </TouchDragProvider>
   );
 }

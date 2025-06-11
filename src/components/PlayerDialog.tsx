@@ -194,27 +194,47 @@ export function PlayerDialog({ open, onOpenChange, onGameStart }: PlayerDialogPr
       if (targetPlayerIndex !== -1) {
         const targetPlayer = targetTeam.players[targetPlayerIndex];
         
-        // Create new teams array with swapped players
-        const newTeams = teams.map(team => {
-          if (team.id === sourceTeam.id) {
-            const newPlayers = [...team.players];
-            newPlayers[sourcePlayerIndex] = targetPlayer;
-            return { ...team, players: newPlayers };
-          } 
-          if (team.id === targetTeam.id) {
-            const newPlayers = [...team.players];
-            newPlayers[targetPlayerIndex] = sourcePlayer;
-            return { ...team, players: newPlayers };
-          }
-          return team;
-        });
-        
-        setTeams(newTeams);
-        localStorage.setItem('puzzleGameTeams', JSON.stringify(newTeams));
+        // If moving within the same team, don't swap - just reorder
+        if (sourceTeam.id === targetTeam.id) {
+          const newPlayers = [...sourceTeam.players];
+          // Remove source player
+          newPlayers.splice(sourcePlayerIndex, 1);
+          // Insert at target position
+          const adjustedTargetIndex = targetPlayerIndex > sourcePlayerIndex ? targetPlayerIndex - 1 : targetPlayerIndex;
+          newPlayers.splice(adjustedTargetIndex, 0, sourcePlayer);
+          
+          const newTeams = teams.map(team => {
+            if (team.id === sourceTeam.id) {
+              return { ...team, players: newPlayers };
+            }
+            return team;
+          });
+          
+          setTeams(newTeams);
+          localStorage.setItem('puzzleGameTeams', JSON.stringify(newTeams));
+        } else {
+          // Cross-team swap
+          const newTeams = teams.map(team => {
+            if (team.id === sourceTeam.id) {
+              const newPlayers = [...team.players];
+              newPlayers[sourcePlayerIndex] = targetPlayer;
+              return { ...team, players: newPlayers };
+            } 
+            if (team.id === targetTeam.id) {
+              const newPlayers = [...team.players];
+              newPlayers[targetPlayerIndex] = sourcePlayer;
+              return { ...team, players: newPlayers };
+            }
+            return team;
+          });
+          
+          setTeams(newTeams);
+          localStorage.setItem('puzzleGameTeams', JSON.stringify(newTeams));
+        }
       }
     } else {
-      // Handle dropping into an empty team slot
-      if (targetTeam.players.length < 4) {
+      // Handle dropping into an empty team slot - only if moving to a different team
+      if (sourceTeam.id !== targetTeam.id && targetTeam.players.length < 4) {
         const newTeams = teams.map(team => {
           if (team.id === sourceTeam.id) {
             return { 

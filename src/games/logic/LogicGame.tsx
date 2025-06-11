@@ -2,6 +2,9 @@ import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { GameLevel } from "@/types";
 import { LogicGameUI, GridCell } from "./LogicGameUI";
+import { TouchPathProvider } from "./TouchPathProvider";
+import { TouchGridCell } from "./TouchGridCell";
+import { getCategoryImageUrl } from "@/config/assets";
 
 interface GridSquare {
   id: number;
@@ -373,6 +376,19 @@ const LEVEL_CONFIGS: LevelConfig[] = [
   }
 ];
 
+const colorToImage: { [key: string]: string } = {
+  "#10B981": "switch-green.png",
+  "#EF4444": "switch-red.png",
+  "#3B82F6": "switch-blue.png",
+  "#F59E0B": "switch-yellow.png",
+  "#F97316": "switch-orange.png",
+  "#EC4899": "switch-pink.png"
+};
+
+function getSwitchImageSrc(outputColor: string) {
+  return getCategoryImageUrl(colorToImage[outputColor] || "switch-default.png");
+}
+
 export const LogicGame: React.FC<LogicGameProps> = ({ level, onComplete, onTimeUp }) => {
   const navigate = useNavigate();
   const gridRef = useRef<HTMLDivElement>(null);
@@ -664,6 +680,66 @@ export const LogicGame: React.FC<LogicGameProps> = ({ level, onComplete, onTimeU
     setIsPathBroken(false);
   };
 
+  const handleTouchPathComplete = (path: PathPoint[], color: string) => {
+    // Validate the touch path using the same logic as mouse paths
+    const startPoint = path[0];
+    const endPoint = path[path.length - 1];
+    
+    const startSquare = levelConfig.squares.find(s => s.row === startPoint.row && s.col === startPoint.col);
+    const endSquare = levelConfig.squares.find(s => s.row === endPoint.row && s.col === endPoint.col);
+    
+    if (startSquare && endSquare && startSquare.color === endSquare.color && startSquare.id !== endSquare.id) {
+      // Check if path is valid (no collisions, proper adjacency)
+      let isValidPath = true;
+      let pathColor = color;
+      
+      for (let i = 0; i < path.length - 1; i++) {
+        const current = path[i];
+        const next = path[i + 1];
+        
+        const switchAtCurrent = getSwitch(current.row, current.col);
+        if (switchAtCurrent) {
+          pathColor = switchAtCurrent.outputColor;
+        }
+        
+        if (!areAdjacent(current, next)) {
+          isValidPath = false;
+          break;
+        }
+        
+        if (isCellOccupiedByDifferentColor(next.row, next.col, pathColor)) {
+          isValidPath = false;
+          break;
+        }
+      }
+      
+      if (isValidPath) {
+        const newPath: DrawnPath = {
+          id: `path-${Date.now()}`,
+          points: [...path],
+          color: color
+        };
+        
+        setDrawnPaths(prev => [...prev, newPath]);
+      }
+    }
+  };
+
+  const handleTouchPathUpdate = (path: PathPoint[]) => {
+    setCurrentPath(path);
+    if (path.length > 0) {
+      const startPoint = path[0];
+      const square = levelConfig.squares.find(s => s.row === startPoint.row && s.col === startPoint.col);
+      if (square) {
+        setDrawingFrom({ row: startPoint.row, col: startPoint.col, color: square.color });
+        setIsDrawing(true);
+      }
+    } else {
+      setDrawingFrom(null);
+      setIsDrawing(false);
+    }
+  };
+
   const occupiedCells = getOccupiedCells(drawingFrom?.color);
 
   const gridCells = [];
@@ -678,7 +754,7 @@ export const LogicGame: React.FC<LogicGameProps> = ({ level, onComplete, onTimeU
       const cellIsObstacle = isObstacle(row, col);
       
       gridCells.push(
-        <GridCell
+        <TouchGridCell
           key={`${row}-${col}`}
           row={row}
           col={col}
@@ -692,6 +768,7 @@ export const LogicGame: React.FC<LogicGameProps> = ({ level, onComplete, onTimeU
           isOccupiedByOtherColor={isOccupiedByOtherColor}
           isObstacle={cellIsObstacle}
           cellSize={cellSize}
+          getSwitchImageSrc={getSwitchImageSrc}
         />
       );
     }
@@ -709,25 +786,30 @@ export const LogicGame: React.FC<LogicGameProps> = ({ level, onComplete, onTimeU
   };
 
   return (
-    <LogicGameUI
-      ref={gridRef}
-      level={level}
-      timeLeft={timeLeft}
-      drawnPaths={drawnPaths}
-      requiredConnections={levelConfig.requiredConnections}
-      gridSize={levelConfig.gridSize}
-      gridCells={gridCells}
-      cellSize={cellSize}
-      isDrawing={isDrawing}
-      currentPath={currentPath}
-      drawingFrom={drawingFrom}
-      switches={levelConfig.switches}
-      onClearPaths={clearPaths}
-      onMouseLeave={handleMouseLeave}
-      isPathBroken={isPathBroken}
-      isCompleted={isCompleted}
-      completionProgress={completionProgress}
-      onNextLevel={handleNextLevel}
-    />
+    <TouchPathProvider
+      onPathComplete={handleTouchPathComplete}
+      onPathUpdate={handleTouchPathUpdate}
+    >
+      <LogicGameUI
+        ref={gridRef}
+        level={level}
+        timeLeft={timeLeft}
+        drawnPaths={drawnPaths}
+        requiredConnections={levelConfig.requiredConnections}
+        gridSize={levelConfig.gridSize}
+        gridCells={gridCells}
+        cellSize={cellSize}
+        isDrawing={isDrawing}
+        currentPath={currentPath}
+        drawingFrom={drawingFrom}
+        switches={levelConfig.switches}
+        onClearPaths={clearPaths}
+        onMouseLeave={handleMouseLeave}
+        isPathBroken={isPathBroken}
+        isCompleted={isCompleted}
+        completionProgress={completionProgress}
+        onNextLevel={handleNextLevel}
+      />
+    </TouchPathProvider>
   );
 };
