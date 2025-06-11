@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { GameLevel } from "@/types";
 import { generateQuizQuestions } from "../utils/quizGenerator";
 
-export const useQuizGame = (level: GameLevel, onComplete: () => void, onTimeUp: () => void) => {
+export const useQuizGame = (level: GameLevel, onComplete: (points?: number) => void, onTimeUp: () => void) => {
   const [questions, setQuestions] = useState<{ 
     question: string; 
     options: string[];
@@ -13,6 +13,7 @@ export const useQuizGame = (level: GameLevel, onComplete: () => void, onTimeUp: 
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [timeLeft, setTimeLeft] = useState(level.timeLimit);
   const [score, setScore] = useState(0);
+  const [correctAnswers, setCorrectAnswers] = useState(0);
   const [gameStarted, setGameStarted] = useState(false);
   const [feedback, setFeedback] = useState<"correct" | "incorrect" | null>(null);
   
@@ -50,11 +51,50 @@ export const useQuizGame = (level: GameLevel, onComplete: () => void, onTimeUp: 
     };
   }, [gameStarted, timeLeft, onTimeUp]);
 
+  // Calculate points based on performance
+  const calculatePoints = () => {
+    const totalQuestions = questions.length;
+    const timeElapsed = level.timeLimit - timeLeft;
+    
+    // Base points: 15 points per correct answer
+    let points = correctAnswers * 15;
+    
+    // Time bonus: Up to 5 points per correct answer for speed
+    const averageTimePerQuestion = timeElapsed / Math.max(totalQuestions, 1);
+    if (averageTimePerQuestion <= 20) {
+      points += correctAnswers * 5; // Very fast
+    } else if (averageTimePerQuestion <= 35) {
+      points += correctAnswers * 3; // Fast
+    } else if (averageTimePerQuestion <= 50) {
+      points += correctAnswers * 2; // Medium
+    } else if (averageTimePerQuestion <= 70) {
+      points += correctAnswers * 1; // Slow but acceptable
+    }
+    
+    // Accuracy bonus
+    const accuracy = correctAnswers / totalQuestions;
+    if (accuracy === 1) {
+      points += 20; // Perfect score bonus
+    } else if (accuracy >= 0.8) {
+      points += 15; // High accuracy bonus
+    } else if (accuracy >= 0.6) {
+      points += 10; // Good accuracy bonus
+    }
+    
+    // Completion bonus
+    if (currentQuestionIndex >= totalQuestions) {
+      points += 10; // Completion bonus
+    }
+    
+    return Math.floor(Math.max(0, Math.min(points, 100))); // Cap at 100 points
+  };
+
   // Check game completion
   useEffect(() => {
     if (questions.length > 0 && currentQuestionIndex >= questions.length) {
-      // Game completed
-      onComplete();
+      // Game completed - calculate and pass points
+      const points = calculatePoints();
+      onComplete(points);
     }
   }, [currentQuestionIndex, questions.length, onComplete]);
 
@@ -71,6 +111,7 @@ export const useQuizGame = (level: GameLevel, onComplete: () => void, onTimeUp: 
       const pointsPerQuestion = level.difficultyId === "easy" ? 10 : 
                                level.difficultyId === "medium" ? 15 : 20;
       setScore(prev => prev + pointsPerQuestion);
+      setCorrectAnswers(prev => prev + 1);
     }
     
     // Move to next question after a delay

@@ -10,7 +10,7 @@ import { LoadingScreen } from "./components/LoadingScreen";
 
 interface QuizGameProps {
   level: GameLevel;
-  onComplete: () => void;
+  onComplete: (points?: number) => void;
   onTimeUp: () => void;
 }
 

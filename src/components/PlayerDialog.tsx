@@ -99,6 +99,7 @@ export function PlayerDialog({ open, onOpenChange, onGameStart }: PlayerDialogPr
       id: `team-${i+1}`,
       name: `Team ${i+1}`,
       players: [],
+      points: 0, // Initialize points to 0
     }));
     
     // Create a copy of the player list and shuffle it

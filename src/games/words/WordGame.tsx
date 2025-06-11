@@ -5,7 +5,7 @@ import { Check, RefreshCw, Lightbulb } from "lucide-react";
 
 interface WordGameProps {
   level: GameLevel;
-  onComplete: () => void;
+  onComplete: (points?: number) => void;
   onTimeUp: () => void;
 }
 
@@ -531,6 +531,7 @@ export const WordGame: React.FC<WordGameProps> = ({ level, onComplete, onTimeUp 
   const [feedback, setFeedback] = useState<"correct" | "incorrect" | null>(null);
   const [hintsUsed, setHintsUsed] = useState(0);
   const [revealedLetters, setRevealedLetters] = useState<Set<number>>(new Set());
+  const [correctWords, setCorrectWords] = useState(0);
   
   // Initialize the game immediately
   useEffect(() => {
@@ -569,11 +570,55 @@ export const WordGame: React.FC<WordGameProps> = ({ level, onComplete, onTimeUp 
     };
   }, [timeLeft, onTimeUp]);
 
+  // Calculate points based on performance
+  const calculatePoints = () => {
+    if (!puzzle) return 0;
+    
+    const totalWords = puzzle.puzzles.length;
+    const timeElapsed = level.timeLimit - timeLeft;
+    
+    // Base points: 12 points per correct word
+    let points = correctWords * 12;
+    
+    // Time bonus: Up to 4 points per word for speed
+    const averageTimePerWord = timeElapsed / Math.max(totalWords, 1);
+    if (averageTimePerWord <= 20) {
+      points += correctWords * 4; // Very fast
+    } else if (averageTimePerWord <= 40) {
+      points += correctWords * 3; // Fast
+    } else if (averageTimePerWord <= 60) {
+      points += correctWords * 2; // Medium
+    } else if (averageTimePerWord <= 80) {
+      points += correctWords * 1; // Slow but acceptable
+    }
+    
+    // Hint penalty: Reduce points for using hints
+    points -= hintsUsed * 2;
+    
+    // Accuracy bonus
+    const accuracy = correctWords / totalWords;
+    if (accuracy === 1) {
+      points += 15; // Perfect score bonus
+    } else if (accuracy >= 0.8) {
+      points += 10; // High accuracy bonus
+    } else if (accuracy >= 0.6) {
+      points += 5; // Good accuracy bonus
+    }
+    
+    // Completion bonus
+    if (wordIndex >= totalWords) {
+      points += 10; // Completion bonus
+    }
+    
+    return Math.floor(Math.max(0, Math.min(points, 100))); // Cap at 100 points
+  };
+
   // Check game completion
   useEffect(() => {
     if (puzzle && wordIndex >= puzzle.puzzles.length) {
-      // Game completed
-      onComplete();
+      // Game completed - calculate and pass points
+      const points = calculatePoints();
+      onComplete(points);
     }
   }, [wordIndex, puzzle, onComplete]);
 
@@ -590,6 +635,7 @@ export const WordGame: React.FC<WordGameProps> = ({ level, onComplete, onTimeUp 
     if (isCorrect) {
       // Correct answer
       setGuesses(prev => [...prev, { word: currentInput, description: currentScrambledWord.description }]);
+      setCorrectWords(prev => prev + 1);
     }
     
     // Move to next word after a delay

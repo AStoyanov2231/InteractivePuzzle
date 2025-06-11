@@ -4,6 +4,9 @@ import { ArrowLeft, Users, Trophy, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MemoryGame } from "@/games/memory/MemoryGame";
+import { MathGame } from "@/games/math/MathGame";
+import { WordGame } from "@/games/words/WordGame";
+import { QuizGame } from "@/games/quiz/QuizGame";
 import { FullscreenButton } from "@/components/FullscreenButton";
 import { useToast } from "@/hooks/use-toast";
 import { GameLevel } from "@/types";
@@ -12,6 +15,7 @@ interface TeamData {
   id: string;
   name: string;
   players: { name: string; id: string }[];
+  points?: number; // Add points field for competitive scoring
 }
 
 const CompetitiveGame = () => {
@@ -26,18 +30,90 @@ const CompetitiveGame = () => {
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [currentPlayerId, setCurrentPlayerId] = useState<string>("");
 
-  // Default game level for competitive memory game
-  const gameLevel: GameLevel = {
-    id: 1,
-    themeId: "memory",
-    difficultyId: "medium",
-    isLocked: false,
-    title: "Състезателна игра на паметта",
-    description: "Игра на паметта с категории",
-    timeLimit: 300, // 5 minutes
-    moves: 50,
-    grid: "4×4",
+  // Get game configuration based on category
+  const getGameConfig = (category: string): { level: GameLevel; title: string } => {
+    switch (category) {
+      case 'memory':
+        return {
+          level: {
+            id: 1,
+            themeId: "memory",
+            difficultyId: "medium",
+            isLocked: false,
+            title: "Състезателна игра на паметта",
+            description: "Игра на паметта с категории",
+            timeLimit: 300, // 5 minutes
+            moves: 50,
+            grid: "4×4",
+          },
+          title: "Битка на паметта"
+        };
+      case 'math':
+        return {
+          level: {
+            id: 1,
+            themeId: "math",
+            difficultyId: "medium",
+            isLocked: false,
+            title: "Математически маратон",
+            description: "Бързи математически изчисления",
+            timeLimit: 180, // 3 minutes
+            moves: 20,
+            grid: "3×3",
+          },
+          title: "Математически маратон"
+        };
+      case 'words':
+        return {
+          level: {
+            id: 1,
+            themeId: "words",
+            difficultyId: "medium",
+            isLocked: false,
+            title: "Словесни състезания",
+            description: "Отгатване на разбъркани думи",
+            timeLimit: 240, // 4 minutes
+            moves: 15,
+            grid: "4×3",
+          },
+          title: "Словесни състезания"
+        };
+      case 'quiz':
+        return {
+          level: {
+            id: 1,
+            themeId: "quiz",
+            difficultyId: "medium",
+            isLocked: false,
+            title: "Блицвикторина",
+            description: "Бързи въпроси от различни области",
+            timeLimit: 300, // 5 minutes
+            moves: 10,
+            grid: "2×5",
+          },
+          title: "Блицвикторина"
+        };
+      default:
+        return {
+          level: {
+            id: 1,
+            themeId: "memory",
+            difficultyId: "medium",
+            isLocked: false,
+            title: "Състезателна игра на паметта",
+            description: "Игра на паметта с категории",
+            timeLimit: 300,
+            moves: 50,
+            grid: "4×4",
+          },
+          title: "Битка на паметта"
+        };
+    }
   };
+
+  const gameConfig = getGameConfig(categoryId || 'memory');
+  const gameLevel = gameConfig.level;
+  const gameTitle = gameConfig.title;
 
   useEffect(() => {
     // Load teams from localStorage
@@ -45,10 +121,21 @@ const CompetitiveGame = () => {
     if (storedTeams) {
       try {
         const parsedTeams = JSON.parse(storedTeams);
-        setTeams(parsedTeams);
+        console.log('Loaded teams from localStorage:', parsedTeams);
+        
+        // Reset points to 0 for fresh competition (prevents accumulated points issue)
+        const teamsWithResetPoints = parsedTeams.map((team: TeamData) => ({
+          ...team,
+          points: 0 // Always start with 0 points for a fresh competition
+        }));
+        setTeams(teamsWithResetPoints);
+        
+        // Save the reset teams back to localStorage
+        localStorage.setItem('puzzleGameTeams', JSON.stringify(teamsWithResetPoints));
+        
         // Set initial player
-        if (parsedTeams.length > 0 && parsedTeams[0].players.length > 0) {
-          setCurrentPlayerId(parsedTeams[0].players[0].id);
+        if (teamsWithResetPoints.length > 0 && teamsWithResetPoints[0].players.length > 0) {
+          setCurrentPlayerId(teamsWithResetPoints[0].players[0].id);
         }
       } catch (e) {
         console.error('Error parsing teams from localStorage', e);
@@ -92,11 +179,31 @@ const CompetitiveGame = () => {
     }, 1500); // Short transition delay
   }, [currentTeamIndex, teams.length, teams, toast]);
 
-  const handleGameComplete = useCallback(() => {
-    if (currentTeam) {
+  const handleGameComplete = useCallback((points?: number) => {
+    console.log('Game completed with points:', points, 'for team:', currentTeam?.name);
+    
+    if (currentTeam && points !== undefined) {
+      // Update team points
+      const updatedTeams = teams.map((team, index) => 
+        index === currentTeamIndex 
+          ? { ...team, points: (team.points || 0) + points }
+          : team
+      );
+      setTeams(updatedTeams);
+      
+      // Save updated teams to localStorage
+      localStorage.setItem('puzzleGameTeams', JSON.stringify(updatedTeams));
+      
+      console.log('Updated teams:', updatedTeams);
+      
       toast({
         title: `${currentTeam.name} завърши!`,
-        description: "Играта е завършена успешно!",
+        description: `Спечелихте ${points} точки! Общо: ${(currentTeam.points || 0) + points} точки`,
+      });
+    } else if (currentTeam) {
+      toast({
+        title: `${currentTeam.name} завърши!`,
+        description: "Играта е завършена!",
       });
     }
 
@@ -104,7 +211,7 @@ const CompetitiveGame = () => {
     setTimeout(() => {
       handleNextTeam();
     }, 2000);
-  }, [currentTeam, toast, handleNextTeam]);
+  }, [currentTeam, toast, handleNextTeam, teams, currentTeamIndex]);
 
   const handlePlayerTurn = useCallback((playerId: string) => {
     setCurrentPlayerId(playerId);
@@ -115,6 +222,11 @@ const CompetitiveGame = () => {
   };
 
   const handleRestartGame = () => {
+    // Reset all team points to 0 for a fresh competition
+    const resetTeams = teams.map(team => ({ ...team, points: 0 }));
+    setTeams(resetTeams);
+    localStorage.setItem('puzzleGameTeams', JSON.stringify(resetTeams));
+    
     setCurrentTeamIndex(0);
     setGameComplete(false);
     setGameKey(prev => prev + 1);
@@ -138,10 +250,65 @@ const CompetitiveGame = () => {
 
   if (gameComplete) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-orange-400 via-orange-200 to-orange-200 py-6 px-6">
+      <div className="min-h-screen bg-gradient-to-br from-orange-400 via-orange-200 to-orange-200 py-6 px-6 relative overflow-hidden">
         <FullscreenButton className="fixed top-4 right-4 z-50" />
         
-        <div className="max-w-4xl mx-auto">
+        {/* Confetti Effects */}
+        <div className="fixed inset-0 pointer-events-none z-30">
+          {/* Left side confetti */}
+          <div className="absolute left-0 top-0 w-20 h-full">
+            {Array.from({ length: 15 }).map((_, i) => (
+              <div
+                key={`left-${i}`}
+                className="absolute w-2 h-2 rounded-full animate-bounce opacity-80"
+                style={{
+                  backgroundColor: ['#FFD700', '#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A'][i % 5],
+                  left: `${Math.random() * 80}px`,
+                  top: `${Math.random() * 100}%`,
+                  animationDelay: `${Math.random() * 2}s`,
+                  animationDuration: `${2 + Math.random() * 3}s`
+                }}
+              />
+            ))}
+          </div>
+          
+          {/* Right side confetti */}
+          <div className="absolute right-0 top-0 w-20 h-full">
+            {Array.from({ length: 15 }).map((_, i) => (
+              <div
+                key={`right-${i}`}
+                className="absolute w-2 h-2 rounded-full animate-bounce opacity-80"
+                style={{
+                  backgroundColor: ['#FFD700', '#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A'][i % 5],
+                  left: `${Math.random() * 80}px`,
+                  top: `${Math.random() * 100}%`,
+                  animationDelay: `${Math.random() * 2}s`,
+                  animationDuration: `${2 + Math.random() * 3}s`
+                }}
+              />
+            ))}
+          </div>
+          
+          {/* Floating particles */}
+          <div className="absolute inset-0">
+            {Array.from({ length: 20 }).map((_, i) => (
+              <div
+                key={`float-${i}`}
+                className="absolute text-2xl opacity-60 animate-pulse"
+                style={{
+                  left: `${10 + Math.random() * 80}%`,
+                  top: `${10 + Math.random() * 80}%`,
+                  animationDelay: `${Math.random() * 3}s`,
+                  animationDuration: `${3 + Math.random() * 2}s`
+                }}
+              >
+                {['🎉', '🏆', '⭐', '🎊', '🥇'][i % 5]}
+              </div>
+            ))}
+          </div>
+        </div>
+        
+        <div className="max-w-4xl mx-auto relative z-40">
           <div className="mb-6">
             <Button 
               onClick={handleBack} 
@@ -154,28 +321,58 @@ const CompetitiveGame = () => {
           </div>
 
           <div className="text-center space-y-6">
-            <Card className="bg-gradient-to-br from-yellow-400 to-orange-500 border-0 shadow-2xl">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-3xl text-white flex items-center justify-center gap-3">
-                  <Trophy className="w-8 h-8" />
-                  Състезанието приключи!
+            {/* Enhanced Leaderboard Card */}
+            <Card className="bg-gradient-to-br from-yellow-400 via-yellow-500 to-orange-500 border-0 shadow-2xl relative overflow-hidden">
+              <CardHeader className="pb-4 relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-pulse"></div>
+                <CardTitle className="text-4xl text-white flex items-center justify-center gap-3 relative z-10">
+                  <Trophy className="w-10 h-10 animate-bounce" />
+                  Финална класация
                 </CardTitle>
               </CardHeader>
-              <CardContent className="text-white">
-                <div className="space-y-4">
-                  <h3 className="text-xl font-bold">Участвали отбори:</h3>
-                  <div className="grid gap-3">
-                    {teams.map((team, index) => (
-                      <div key={team.id} className="flex items-center justify-between bg-white/20 rounded-lg p-3">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold bg-blue-500">
-                            {index + 1}
+              <CardContent className="text-white pb-6">
+                <div className="space-y-6">
+                  <div className="space-y-4">
+                    {teams
+                      .sort((a, b) => (b.points || 0) - (a.points || 0)) // Sort by points descending
+                      .map((team, index) => {
+                        const isWinner = index === 0;
+                        const medalColor = index === 0 ? 'bg-yellow-400' : index === 1 ? 'bg-gray-300' : index === 2 ? 'bg-orange-400' : 'bg-blue-400';
+                        const medalIcon = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '🏅';
+                        
+                        return (
+                                                     <div 
+                             key={team.id} 
+                             className={`flex items-center justify-between rounded-xl p-4 transition-all duration-300 ${
+                               isWinner 
+                                 ? 'bg-gradient-to-r from-yellow-300/40 to-orange-400/40 border-2 border-yellow-200 shadow-lg' 
+                                 : 'bg-white/30 border border-white/40'
+                             }`}
+                           >
+                            <div className="flex items-center gap-4">
+                              <div className={`w-12 h-12 rounded-full flex items-center justify-center text-2xl font-bold text-white shadow-lg ${medalColor} ${isWinner ? 'animate-pulse' : ''}`}>
+                                {medalIcon}
+                              </div>
+                                                             <div className="text-left">
+                                 <span className={`font-bold text-lg ${isWinner ? 'text-gray-900 drop-shadow-sm' : 'text-gray-900'}`}>
+                                   {team.name}
+                                 </span>
+                                 <div className={`text-sm ${isWinner ? 'text-gray-800' : 'text-gray-700'}`}>
+                                   {team.players.length} играч{team.players.length !== 1 ? 'а' : ''}
+                                 </div>
+                               </div>
+                            </div>
+                                                         <div className="text-right">
+                               <div className={`text-2xl font-bold ${isWinner ? 'text-gray-900 drop-shadow-sm' : 'text-gray-900'}`}>
+                                 {team.points || 0} т.
+                               </div>
+                               <div className={`text-sm ${isWinner ? 'text-gray-800' : 'text-gray-700'}`}>
+                                 #{index + 1} място
+                               </div>
+                             </div>
                           </div>
-                          <span className="font-medium">{team.name}</span>
-                        </div>
-                        <span className="text-sm">Завършен</span>
-                      </div>
-                    ))}
+                        );
+                      })}
                   </div>
                 </div>
               </CardContent>
@@ -199,6 +396,58 @@ const CompetitiveGame = () => {
   const getCurrentPlayer = () => {
     if (!currentTeam) return null;
     return currentTeam.players.find(player => player.id === currentPlayerId);
+  };
+
+  // Render the appropriate game component based on category
+  const renderGameComponent = () => {
+    const handleTimeUp = () => {
+      // For time up, we don't pass points
+      handleGameComplete();
+    };
+
+    const commonProps = {
+      key: gameKey,
+      level: gameLevel,
+      onComplete: handleGameComplete,
+      onTimeUp: handleTimeUp,
+    };
+
+    switch (categoryId) {
+      case 'memory':
+        return (
+          <MemoryGame 
+            {...commonProps}
+            currentTeam={currentTeam}
+            onPlayerTurn={handlePlayerTurn}
+          />
+        );
+      case 'math':
+        return (
+          <MathGame 
+            {...commonProps}
+          />
+        );
+      case 'words':
+        return (
+          <WordGame 
+            {...commonProps}
+          />
+        );
+      case 'quiz':
+        return (
+          <QuizGame 
+            {...commonProps}
+          />
+        );
+      default:
+        return (
+          <MemoryGame 
+            {...commonProps}
+            currentTeam={currentTeam}
+            onPlayerTurn={handlePlayerTurn}
+          />
+        );
+    }
   };
 
   const currentPlayer = getCurrentPlayer();
@@ -225,7 +474,7 @@ const CompetitiveGame = () => {
               <CardHeader className="pb-3">
                 <CardTitle className="text-lg text-center text-gray-800 flex items-center justify-center gap-2">
                   <Users className="w-5 h-5" />
-                  Състезание
+                  {gameTitle}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -244,7 +493,12 @@ const CompetitiveGame = () => {
             {currentTeam && (
               <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-lg">
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-lg text-gray-800">Текущ отбор</CardTitle>
+                  <CardTitle className="text-lg text-gray-800 flex items-center justify-between">
+                    Текущ отбор
+                    <div className="text-2xl font-bold text-green-600">
+                      {currentTeam.points || 0} т.
+                    </div>
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
@@ -275,7 +529,7 @@ const CompetitiveGame = () => {
                 <CardTitle className="text-lg text-gray-800">Всички отбори</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-2 max-h-64 overflow-y-auto">
+                <div className="space-y-2 max-h-74 overflow-y-auto">
                   {teams.map((team, index) => (
                     <div 
                       key={team.id} 
@@ -287,7 +541,12 @@ const CompetitiveGame = () => {
                             : 'bg-gray-100 border border-gray-300'
                       }`}
                     >
-                      <span className="font-medium text-sm">{team.name}</span>
+                      <div className="flex-1">
+                        <span className="font-medium text-sm">{team.name}</span>
+                        <div className="text-xs text-gray-600">
+                          {team.points || 0} точки
+                        </div>
+                      </div>
                       <span className="text-xs">
                         {index < currentTeamIndex ? '✓' : index === currentTeamIndex ? '▶' : '○'}
                       </span>
@@ -318,14 +577,7 @@ const CompetitiveGame = () => {
             <div className="bg-white/40 backdrop-blur-sm rounded-3xl shadow-xl border border-white/30 p-6 h-full">
               <div className="h-full flex flex-col">
                 <div className="flex-1 bg-white/60 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-4 overflow-auto">
-                  <MemoryGame 
-                    key={gameKey}
-                    level={gameLevel} 
-                    onComplete={handleGameComplete} 
-                    onTimeUp={handleGameComplete}
-                    currentTeam={currentTeam}
-                    onPlayerTurn={handlePlayerTurn}
-                  />
+                  {renderGameComponent()}
                 </div>
               </div>
             </div>

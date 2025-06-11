@@ -33,34 +33,64 @@ export const getMemoryItems = (themeId: string, gridSize: number) => {
   return shuffled;
 };
 
-// Memory game categories for selection
+// Helper function to format time display
+export const formatTime = (seconds: number): string => {
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
+  return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
+};
+
+// Memory categories for competitive mode
 export const memoryCategories = [
-  { 
-    id: "animals", 
-    name: "Животни", 
-    icon: "🐶", 
-    color: "#F59E0B",
-    description: ""
+  {
+    id: "animals",
+    name: "Животни",
+    description: "Различни животни",
+    icon: "🐶",
+    color: "#10B981"
   },
-  { 
-    id: "food", 
-    name: "Храна", 
-    icon: "🍎", 
-    color: "#EF4444",
-    description: ""
+  {
+    id: "food",
+    name: "Храна",
+    description: "Плодове и храни",
+    icon: "🍎",
+    color: "#F59E0B"
   },
-  { 
-    id: "sports", 
-    name: "Спорт", 
-    icon: "⚽", 
-    color: "#3B82F6",
-    description: ""
+  {
+    id: "sports",
+    name: "Спорт",
+    description: "Спортни предмети",
+    icon: "⚽",
+    color: "#3B82F6"
   }
 ];
 
-// Format time as MM:SS
-export const formatTime = (seconds: number) => {
-  const mins = Math.floor(seconds / 60);
-  const secs = seconds % 60;
-  return `${mins}:${secs.toString().padStart(2, '0')}`;
+// Points calculation utility function for testing
+export const calculateMemoryPoints = (
+  completedPairs: number,
+  totalPairs: number,
+  timeElapsed: number,
+  wrongMoves: number,
+  isGameComplete: boolean = false
+): number => {
+  // Base points: 10 points per matched pair
+  let points = completedPairs * 10;
+  
+  // Time bonus: Up to 5 bonus points per pair based on speed
+  // Faster completion = more bonus (max 5 points per pair)
+  const averageTimePerPair = timeElapsed / Math.max(completedPairs, 1);
+  const timeBonus = Math.max(0, Math.min(5, Math.floor((60 - averageTimePerPair) / 10))); // Bonus for being faster than 60 seconds per pair
+  points += completedPairs * timeBonus;
+  
+  // Efficiency bonus: Small bonus for fewer wrong moves
+  // Max 1 point per pair for perfect efficiency (no wrong moves)
+  const efficiencyBonus = Math.max(0, completedPairs - wrongMoves * 0.5);
+  points += Math.floor(efficiencyBonus);
+  
+  // Completion bonus: Extra points for completing the entire game
+  if (isGameComplete && completedPairs === totalPairs) {
+    points += 10; // 10 point completion bonus
+  }
+  
+  return Math.floor(Math.max(0, points)); // Ensure non-negative integer
 };

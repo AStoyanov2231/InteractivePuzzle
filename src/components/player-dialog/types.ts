@@ -7,6 +7,7 @@ export interface Team {
   id: string;
   name: string;
   players: TeamPlayer[];
+  points?: number;
 }
 
 export interface PlayerDialogProps {

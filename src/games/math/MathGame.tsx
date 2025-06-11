@@ -5,7 +5,7 @@ import { Check, RefreshCw } from "lucide-react";
 
 interface MathGameProps {
   level: GameLevel;
-  onComplete: () => void;
+  onComplete: (points?: number) => void;
   onTimeUp: () => void;
 }
 
@@ -76,7 +76,7 @@ export const MathGame: React.FC<MathGameProps> = ({ level, onComplete, onTimeUp 
   const [currentProblemIndex, setCurrentProblemIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [timeLeft, setTimeLeft] = useState(level.timeLimit);
-
+  const [correctAnswers, setCorrectAnswers] = useState(0);
   const [feedback, setFeedback] = useState<"correct" | "incorrect" | null>(null);
   
   // Initialize the game immediately
@@ -111,11 +111,50 @@ export const MathGame: React.FC<MathGameProps> = ({ level, onComplete, onTimeUp 
     };
   }, [timeLeft, onTimeUp]);
 
+  // Calculate points based on performance
+  const calculatePoints = () => {
+    const totalProblems = problems.length;
+    const timeElapsed = level.timeLimit - timeLeft;
+    
+    // Base points: 10 points per correct answer
+    let points = correctAnswers * 10;
+    
+    // Time bonus: Up to 5 points per correct answer for speed
+    const averageTimePerProblem = timeElapsed / Math.max(totalProblems, 1);
+    if (averageTimePerProblem <= 15) {
+      points += correctAnswers * 5; // Very fast
+    } else if (averageTimePerProblem <= 30) {
+      points += correctAnswers * 3; // Fast
+    } else if (averageTimePerProblem <= 45) {
+      points += correctAnswers * 2; // Medium
+    } else if (averageTimePerProblem <= 60) {
+      points += correctAnswers * 1; // Slow but acceptable
+    }
+    
+    // Accuracy bonus
+    const accuracy = correctAnswers / totalProblems;
+    if (accuracy === 1) {
+      points += 20; // Perfect score bonus
+    } else if (accuracy >= 0.8) {
+      points += 10; // High accuracy bonus
+    } else if (accuracy >= 0.6) {
+      points += 5; // Good accuracy bonus
+    }
+    
+    // Completion bonus
+    if (currentProblemIndex >= totalProblems) {
+      points += 10; // Completion bonus
+    }
+    
+    return Math.floor(Math.max(0, Math.min(points, 100))); // Cap at 100 points
+  };
+
   // Check game completion
   useEffect(() => {
     if (problems.length > 0 && currentProblemIndex >= problems.length) {
-      // Game completed
-      onComplete();
+      // Game completed - calculate and pass points
+      const points = calculatePoints();
+      onComplete(points);
     }
   }, [currentProblemIndex, problems.length, onComplete]);
 
@@ -128,7 +167,7 @@ export const MathGame: React.FC<MathGameProps> = ({ level, onComplete, onTimeUp 
     setFeedback(isCorrect ? "correct" : "incorrect");
     
     if (isCorrect) {
-      // Correct answer
+      setCorrectAnswers(prev => prev + 1);
     }
     
     // Move to next problem after a delay
