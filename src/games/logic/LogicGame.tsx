@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { GameLevel } from "@/types";
 import { LogicGameUI, GridCell } from "./LogicGameUI";
 
@@ -375,8 +375,22 @@ const LEVEL_CONFIGS: LevelConfig[] = [
 
 export const LogicGame: React.FC<LogicGameProps> = ({ level, onComplete, onTimeUp }) => {
   const navigate = useNavigate();
+  const { categoryId } = useParams();
   const gridRef = useRef<HTMLDivElement>(null);
-  const [levelConfig, setLevelConfig] = useState<LevelConfig>(LEVEL_CONFIGS[level.id - 1] || LEVEL_CONFIGS[0]);
+  
+  // Calculate the correct level index based on the pattern that levels 1-10 are for each theme/difficulty combo
+  // Since logic game only has 10 unique level configs, we need to map the level.id to 0-9
+  const levelIndex = ((level.id - 1) % 10);
+  
+  console.log('LogicGame Debug:', {
+    levelId: level.id,
+    levelTitle: level.title,
+    themeId: level.themeId,
+    difficultyId: level.difficultyId,
+    calculatedIndex: levelIndex
+  });
+  
+  const [levelConfig, setLevelConfig] = useState<LevelConfig>(LEVEL_CONFIGS[levelIndex] || LEVEL_CONFIGS[0]);
   const [drawnPaths, setDrawnPaths] = useState<DrawnPath[]>([]);
   const [isDrawing, setIsDrawing] = useState(false);
   const [drawingFrom, setDrawingFrom] = useState<{ row: number; col: number; color: string } | null>(null);
@@ -389,7 +403,8 @@ export const LogicGame: React.FC<LogicGameProps> = ({ level, onComplete, onTimeU
   const [canProceed, setCanProceed] = useState(false);
 
   useEffect(() => {
-    const newLevelConfig = LEVEL_CONFIGS[level.id - 1] || LEVEL_CONFIGS[0];
+    const newLevelIndex = ((level.id - 1) % 10);
+    const newLevelConfig = LEVEL_CONFIGS[newLevelIndex] || LEVEL_CONFIGS[0];
     setLevelConfig(newLevelConfig);
     setDrawnPaths([]);
     setIsDrawing(false);
@@ -699,11 +714,19 @@ export const LogicGame: React.FC<LogicGameProps> = ({ level, onComplete, onTimeU
 
   const handleNextLevel = () => {
     if (canProceed) {
-      const nextLevelId = level.id + 1;
-      if (nextLevelId <= 10) {
-        navigate(`/game/logic/${nextLevelId}`);
+      // Get the next level within the same theme and difficulty
+      const currentLevelNumber = parseInt(level.title.replace('Ниво ', ''));
+      const nextLevelNumber = currentLevelNumber + 1;
+      
+      if (nextLevelNumber <= 10) {
+        // Calculate the next level ID based on the current pattern
+        // Each theme/difficulty combination has 10 levels
+        const baseId = Math.floor((level.id - 1) / 10) * 10;
+        const nextLevelId = baseId + nextLevelNumber;
+        
+        navigate(`/game/${categoryId}/${nextLevelId}`);
       } else {
-        navigate('/?category=logic');
+        navigate(`/?category=${categoryId}`);
       }
     }
   };

@@ -8,7 +8,7 @@ interface PuzzleCardProps {
 }
 
 export const PuzzleCard = ({ category, onClick, className, disabled = false }: PuzzleCardProps) => {
-  const imageUrl = `https://astoyanov2231.github.io/InteractivePuzzle-Assets/assets/images/categories/${category.icon}`;
+  const imageUrl = `https://astoyanov2231.github.io/InteractivePuzzle-Assets/images/categories/${category.icon}`;
 
   return (
     <div
