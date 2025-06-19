@@ -78,7 +78,7 @@ const colorToImage: { [key: string]: string } = {
 };
 
 function getSwitchImageSrc(outputColor: string) {
-  return `/assets/images/categories/${colorToImage[outputColor] || "switch-default.png"}`;
+  return `https://astoyanov2231.github.io/InteractivePuzzle-Assets/assets/images/categories/${colorToImage[outputColor] || "switch-default.png"}`;
 }
 
 const GridCell: React.FC<GridCellProps> = ({ 
