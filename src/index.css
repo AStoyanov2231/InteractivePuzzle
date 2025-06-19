@@ -1,0 +1,187 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 252 56% 96%;
+    --foreground: 240 10% 3.9%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 3.9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 3.9%;
+
+    --primary: 265.5 91.7% 65.7%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 240 4.8% 95.9%;
+    --secondary-foreground: 240 5.9% 10%;
+
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
+
+    --accent: 240 4.8% 95.9%;
+    --accent-foreground: 240 5.9% 10%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    --ring: 240 5.9% 10%;
+
+    --radius: 1rem;
+  }
+
+  .dark {
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
+
+    --card: 240 10% 3.9%;
+    --card-foreground: 0 0% 98%;
+
+    --popover: 240 10% 3.9%;
+    --popover-foreground: 0 0% 98%;
+
+    --primary: 265.5 91.7% 65.7%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 240 3.7% 15.9%;
+    --secondary-foreground: 0 0% 98%;
+
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
+
+    --accent: 240 3.7% 15.9%;
+    --accent-foreground: 0 0% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 240 4.9% 83.9%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    font-family: 'Roboto', sans-serif;
+    min-height: 100vh;
+    min-width: 100vw;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+  
+  /* Improve text clarity for UI components */
+  button, input, label, .dialog-content {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+  
+  /* Improve icon rendering */
+  svg {
+    shape-rendering: geometricPrecision;
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+  }
+  
+  /* Prevent blur on transformed elements */
+  .transform, .transition-transform {
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+    -webkit-perspective: 1000px;
+    perspective: 1000px;
+  }
+}
+
+@layer components {
+  .puzzle-card {
+    @apply flex items-center gap-3 p-5 bg-white rounded-xl border border-gray-100/50 shadow-sm transition-all duration-300 cursor-pointer hover:shadow-md hover:-translate-y-0.5 hover:border-gray-200/50 relative mx-1 my-0.5;
+  }
+  
+  .puzzle-icon {
+    @apply flex items-center justify-center h-14 w-14 rounded-md text-white;
+  }
+  
+  .theme-chip {
+    @apply px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-300 hover:opacity-90 hover:scale-105;
+  }
+  
+  .difficulty-chip {
+    @apply px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-300 hover:opacity-90 hover:scale-105;
+  }
+  
+  .level-chip {
+    @apply flex items-center justify-center h-12 w-full rounded-md bg-gray-100 text-gray-500 transition-all duration-300;
+  }
+  
+  .level-chip.active {
+    @apply bg-primary text-white;
+  }
+  
+  .level-chip.locked {
+    @apply bg-gray-100 text-gray-400 cursor-not-allowed;
+  }
+  
+  .glass-effect {
+    @apply backdrop-blur-sm bg-white/70 border border-white/20 shadow-sm;
+  }
+  
+  /* Apple-inspired liquid glass effects */
+  .liquid-glass {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0));
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+  }
+  
+  .liquid-glass-intense {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.05));
+    backdrop-filter: blur(40px);
+    -webkit-backdrop-filter: blur(40px);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    box-shadow: 
+      0 8px 32px 0 rgba(31, 38, 135, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  }
+  
+  /* Smooth glass transitions */
+  .glass-transition {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .glass-transition:hover {
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    box-shadow: 
+      0 12px 40px 0 rgba(31, 38, 135, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  }
+}
+
+.puzzle-details {
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
