@@ -15,7 +15,7 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <BrowserRouter>
+      <BrowserRouter basename={import.meta.env.PROD ? "/InteractivePuzzle" : ""}>
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/game/:categoryId/:levelId" element={<Game />} />
