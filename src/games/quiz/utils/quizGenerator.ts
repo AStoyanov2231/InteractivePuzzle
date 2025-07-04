@@ -9,6 +9,8 @@ export interface QuizQuestion {
 
 // Generate quiz questions based on theme and difficulty
 export const generateQuizQuestions = (themeId: string, difficultyId: string, count: number) => {
+  console.log(`generateQuizQuestions called with: themeId=${themeId}, difficultyId=${difficultyId}, count=${count}`);
+  
   const questions: { 
     question: string; 
     options: string[];
@@ -180,7 +182,18 @@ export const generateQuizQuestions = (themeId: string, difficultyId: string, cou
     themeQuestions = scienceQuestions;
   } else if (themeId === "geography") {
     themeQuestions = geographyQuestions;
+  } else if (themeId === "mixed" || !themeId) {
+    // Mixed theme for competitive mode - combine all question types
+    themeQuestions = [...historyQuestions, ...scienceQuestions, ...geographyQuestions];
+    console.log(`Using mixed theme with ${themeQuestions.length} total questions`);
+  } else {
+    // Fallback for any other theme - use a random theme
+    const allThemes = [historyQuestions, scienceQuestions, geographyQuestions];
+    themeQuestions = allThemes[Math.floor(Math.random() * allThemes.length)];
+    console.log(`Using fallback random theme with ${themeQuestions.length} questions`);
   }
+  
+  console.log(`Selected ${themeQuestions.length} questions for theme processing`);
   
   // Filter by difficulty
   const filteredQuestions = themeQuestions.filter(q => {
@@ -189,15 +202,19 @@ export const generateQuizQuestions = (themeId: string, difficultyId: string, cou
     return true; // hard difficulty includes all questions
   });
   
+  console.log(`After difficulty filtering: ${filteredQuestions.length} questions`);
+  
   // Shuffle and select requested number of questions
   const shuffledQuestions = [...filteredQuestions].sort(() => Math.random() - 0.5);
   
   // Make sure we have enough questions
   const numQuestions = Math.min(count, shuffledQuestions.length);
+  console.log(`Selecting ${numQuestions} questions from ${shuffledQuestions.length} available`);
   
   for (let i = 0; i < numQuestions; i++) {
     questions.push(shuffledQuestions[i]);
   }
   
+  console.log(`Final result: ${questions.length} questions generated`);
   return questions;
 };

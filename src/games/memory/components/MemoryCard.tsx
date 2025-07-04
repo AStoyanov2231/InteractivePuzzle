@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 
 interface MemoryCardProps {
   item: string;
@@ -9,7 +9,7 @@ interface MemoryCardProps {
   cardSize: number;
 }
 
-export const MemoryCard: React.FC<MemoryCardProps> = ({
+export const MemoryCard = React.memo<MemoryCardProps>(({
   item,
   index,
   isFlipped,
@@ -17,8 +17,39 @@ export const MemoryCard: React.FC<MemoryCardProps> = ({
   onClick,
   cardSize
 }) => {
-  // Calculate font size based on card size
-  const fontSize = Math.max(16, Math.floor(cardSize * 0.4));
+  // Memoize font size calculation
+  const fontSize = useMemo(() => {
+    return Math.max(16, Math.floor(cardSize * 0.4));
+  }, [cardSize]);
+
+  // Memoize card style to avoid recalculation
+  const cardStyle = useMemo(() => ({
+    width: `${cardSize}px`,
+    height: `${cardSize}px`,
+    fontSize: `${fontSize}px`,
+    perspective: "1000px",
+    transformStyle: "preserve-3d" as const,
+    backfaceVisibility: "hidden" as const
+  }), [cardSize, fontSize]);
+
+  // Memoize CSS classes
+  const cardClasses = useMemo(() => {
+    return `
+      flex items-center justify-center 
+      rounded-lg 
+      transition-all duration-300 
+      transform-gpu
+      overflow-hidden
+      ${isFlipped || isMatched
+        ? "bg-white shadow-lg rotate-0 scale-100"
+        : "bg-primary text-transparent shadow-md rotate-y-180 scale-95 hover:scale-100 hover:shadow-lg"
+      }
+    `;
+  }, [isFlipped, isMatched]);
+
+  const handleClick = useMemo(() => {
+    return () => onClick(index);
+  }, [onClick, index]);
 
   const renderCardContent = () => {
     if (!(isFlipped || isMatched)) {
@@ -30,29 +61,14 @@ export const MemoryCard: React.FC<MemoryCardProps> = ({
 
   return (
     <button
-      onClick={() => onClick(index)}
-      className={`
-        flex items-center justify-center 
-        rounded-lg 
-        transition-all duration-300 
-        transform-gpu
-        overflow-hidden
-        ${isFlipped || isMatched
-          ? "bg-white shadow-lg rotate-0 scale-100"
-          : "bg-primary text-transparent shadow-md rotate-y-180 scale-95 hover:scale-100 hover:shadow-lg"
-        }
-      `}
+      onClick={handleClick}
+      className={cardClasses}
       disabled={isMatched}
-      style={{
-        width: `${cardSize}px`,
-        height: `${cardSize}px`,
-        fontSize: `${fontSize}px`,
-        perspective: "1000px",
-        transformStyle: "preserve-3d",
-        backfaceVisibility: "hidden"
-      }}
+      style={cardStyle}
     >
       {renderCardContent()}
     </button>
   );
-};
+});
+
+MemoryCard.displayName = 'MemoryCard';

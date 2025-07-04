@@ -1,26 +1,37 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { getLevel } from "@/data/gamesData";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { puzzleCategories } from "@/data/puzzleData";
 import { GameManager } from "@/games/GameManager";
 import { FullscreenButton } from "@/components/FullscreenButton";
+import { GameLevel } from "@/types";
 
 const Game = () => {
   const { categoryId, levelId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const numericLevelId = levelId ? parseInt(levelId) : 0;
   
   const [gameData, setGameData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (categoryId && numericLevelId) {
       try {
-        const level = getLevel(categoryId, numericLevelId);
+        // Check if we have a custom level passed through navigation state (for math operations)
+        const customLevel = location.state?.customLevel as GameLevel;
+        
+        let level;
+        if (customLevel) {
+          // Use the custom level for math games with selected operations
+          level = customLevel;
+        } else {
+          // Use the regular level lookup for other games
+          level = getLevel(categoryId, numericLevelId);
+        }
         
         if (level) {
           setGameData({
@@ -40,14 +51,12 @@ const Game = () => {
     }
     
     setLoading(false);
-  }, [categoryId, numericLevelId, navigate]);
+  }, [categoryId, numericLevelId, navigate, location.state]);
 
   const handleBack = () => {
-    // Navigate back to PuzzleDetails for the specific category
-    navigate(`/?category=${categoryId}`);
+    // Navigate back to home screen
+    navigate("/");
   };
-
-
 
   const handleGameComplete = () => {
     // Game completed
@@ -56,8 +65,6 @@ const Game = () => {
   const handleTimeUp = () => {
     // Time is up
   };
-
-
 
   if (loading) {
     return (
@@ -123,10 +130,9 @@ const Game = () => {
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div className="bg-white/60 backdrop-blur-sm px-4 py-2 rounded-xl shadow-sm border border-white/20">
-            <h1 className="text-lg font-bold text-gray-800">{category?.name} - {level.title}</h1>
+            <h1 className="text-lg font-bold text-gray-800">{category?.name}</h1>
           </div>
         </div>
-
       </div>
 
       {/* Game Content Container - Calculated height for single viewport */}

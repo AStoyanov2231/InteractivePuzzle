@@ -9,13 +9,28 @@ import { QuizHud } from "./components/QuizHud";
 import { LoadingScreen } from "./components/LoadingScreen";
 import { TimeUpScreen } from "@/components/TimeUpScreen";
 
-interface QuizGameProps {
-  level: GameLevel;
-  onComplete: (score?: number) => void;
-  onTimeUp: () => void;
+interface TeamData {
+  id: string;
+  name: string;
+  players: { name: string; id: string }[];
+  score: number;
 }
 
-export const QuizGame: React.FC<QuizGameProps> = ({ level, onComplete, onTimeUp }) => {
+interface QuizGameProps {
+  level: GameLevel;
+  onComplete: () => void;
+  onTimeUp: () => void;
+  currentTeam?: TeamData;
+  onPlayerTurn?: (playerId: string) => void;
+}
+
+export const QuizGame: React.FC<QuizGameProps> = ({ 
+  level, 
+  onComplete, 
+  onTimeUp, 
+  currentTeam, 
+  onPlayerTurn 
+}) => {
   const {
     questions,
     currentQuestionIndex,
@@ -33,10 +48,19 @@ export const QuizGame: React.FC<QuizGameProps> = ({ level, onComplete, onTimeUp 
     handleStartGame,
     formatTime,
     getThemeTitle,
-    resetTimer
-  } = useQuizGame(level, onComplete, onTimeUp);
+    resetTimer,
+    currentPlayerIndex,
+    setCurrentPlayerIndex
+  } = useQuizGame(level, onComplete, onTimeUp, currentTeam, onPlayerTurn);
 
-  if (!gameStarted) {
+  // Auto-start game in competitive mode
+  React.useEffect(() => {
+    if (currentTeam && !gameStarted) {
+      handleStartGame();
+    }
+  }, [currentTeam, gameStarted, handleStartGame]);
+
+  if (!gameStarted && !currentTeam) {
     return (
       <QuizStartScreen 
         title={getThemeTitle()} 
@@ -54,6 +78,11 @@ export const QuizGame: React.FC<QuizGameProps> = ({ level, onComplete, onTimeUp 
 
   if (isCompleted) {
     return <LoadingScreen message="Изчисляване на резултата..." />;
+  }
+
+  // Safety check for currentQuestion
+  if (!currentQuestion) {
+    return <LoadingScreen message="Подготвяне на въпроса..." />;
   }
 
   const handleReset = () => {
@@ -77,33 +106,20 @@ export const QuizGame: React.FC<QuizGameProps> = ({ level, onComplete, onTimeUp 
           formatTime={formatTime}
           hasStarted={hasStarted}
         />
-      
-      {/* Test button for development */}
-      <div className="mb-4 text-center">
-        <button
-          onClick={() => {
-            const testScore = 320 + Math.floor(Math.random() * 130);
-            onComplete(testScore);
-          }}
-          className="px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600 text-sm"
-        >
-          🧪 Test: Complete Round (Score: ~400)
-        </button>
+
+        <QuizQuestion 
+          question={currentQuestion.question}
+          options={currentQuestion.options}
+          selectedOption={selectedOption}
+          feedback={feedback}
+          onSelect={handleOptionSelect}
+        />
+
+        <QuizFeedback 
+          feedback={feedback} 
+          correctAnswer={feedback === "incorrect" ? currentQuestion.options[currentQuestion.correctIndex] : undefined} 
+        />
       </div>
-
-      <QuizQuestion 
-        question={currentQuestion.question}
-        options={currentQuestion.options}
-        selectedOption={selectedOption}
-        feedback={feedback}
-        onSelect={handleOptionSelect}
-      />
-
-      <QuizFeedback 
-        feedback={feedback} 
-        correctAnswer={feedback === "incorrect" ? currentQuestion.options[currentQuestion.correctIndex] : undefined} 
-      />
-    </div>
     </>
   );
 };

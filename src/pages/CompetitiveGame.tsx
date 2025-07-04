@@ -72,7 +72,7 @@ const CompetitiveGame = () => {
       case "quiz":
         return {
           ...baseLevel,
-          themeId: "quiz",
+          themeId: "mixed",
           difficultyId: "medium",
           title: "Блицвикторина", 
           description: "Бързи въпроси от различни области",
@@ -163,26 +163,11 @@ const CompetitiveGame = () => {
     }, 1500); // Short transition delay
   }, [currentTeamIndex, teams.length, teams, toast]);
 
-  const handleGameComplete = useCallback((score?: number) => {
+  const handleGameComplete = useCallback(() => {
     if (currentTeam) {
-      const finalScore = score || 0;
-      
-      // Update team score
-      setTeamScores(prev => ({
-        ...prev,
-        [currentTeam.id]: finalScore
-      }));
-      
-      // Update teams array with score
-      setTeams(prev => prev.map(team => 
-        team.id === currentTeam.id 
-          ? { ...team, score: finalScore }
-          : team
-      ));
-      
       toast({
         title: `${currentTeam.name} завърши!`,
-        description: `Резултат: ${finalScore} точки`,
+        description: `Игра завършена успешно!`,
       });
     }
 
@@ -222,6 +207,48 @@ const CompetitiveGame = () => {
     }
   };
 
+  // Developer function to complete entire competition
+  const handleCompleteCompetition = useCallback(() => {
+    setIsTransitioning(true);
+    
+    // Simulate each team completing with appropriate toasts
+    let currentIndex = 0;
+    
+    const simulateTeamCompletion = () => {
+      if (currentIndex < teams.length) {
+        const team = teams[currentIndex];
+        
+        // Set current team
+        setCurrentTeamIndex(currentIndex);
+        
+        // Show team completion toast
+        toast({
+          title: `${team.name} завърши!`,
+          description: `Игра завършена успешно!`,
+        });
+        
+        currentIndex++;
+        
+        // Continue with next team after delay
+        setTimeout(simulateTeamCompletion, 800);
+      } else {
+        // All teams completed, finish the competition
+        setTimeout(() => {
+          setGameComplete(true);
+          setIsTransitioning(false);
+          
+          toast({
+            title: "Състезанието приключи!",
+            description: "Всички отбори играха своите игри!",
+          });
+        }, 500);
+      }
+    };
+    
+    // Start the simulation
+    simulateTeamCompletion();
+  }, [teams, toast]);
+
   // Render the appropriate game component based on selected category
   const renderGameComponent = () => {
     switch (selectedGameCategory) {
@@ -243,6 +270,8 @@ const CompetitiveGame = () => {
             level={gameLevel} 
             onComplete={handleGameComplete} 
             onTimeUp={handleGameComplete}
+            currentTeam={currentTeam}
+            onPlayerTurn={handlePlayerTurn}
           />
         );
       case "words":
@@ -261,6 +290,8 @@ const CompetitiveGame = () => {
             level={gameLevel} 
             onComplete={handleGameComplete} 
             onTimeUp={handleGameComplete}
+            currentTeam={currentTeam}
+            onPlayerTurn={handlePlayerTurn}
           />
         );
       default:
@@ -299,10 +330,8 @@ const CompetitiveGame = () => {
   }
 
   if (gameComplete) {
-    // Sort teams by score for leaderboard
-    const sortedTeams = [...teams].sort((a, b) => b.score - a.score);
-    const winnerScore = sortedTeams[0]?.score || 0;
-    const winners = sortedTeams.filter(team => team.score === winnerScore);
+    // All teams have completed the game
+    const completedTeams = [...teams];
     
     return (
       <div className="min-h-screen bg-gradient-to-br from-orange-400 via-orange-200 to-orange-200 py-6 px-6">
@@ -332,37 +361,24 @@ const CompetitiveGame = () => {
                 <div className="space-y-6">
                   <div>
                     <h3 className="text-xl font-bold mb-2">Играна игра: {getGameTitle()}</h3>
-                    {winners.length > 1 ? (
-                      <p className="text-lg">Равен резултат!</p>
-                    ) : (
-                      <p className="text-2xl font-bold">🏆 Победител: {winners[0]?.name}</p>
-                    )}
+                    <p className="text-2xl font-bold">🎉 Всички отбори завършиха успешно!</p>
                   </div>
                   
                   <div>
-                    <h3 className="text-xl font-bold mb-3">Класиране:</h3>
+                    <h3 className="text-xl font-bold mb-3">Участници:</h3>
                   <div className="grid gap-3">
-                      {sortedTeams.map((team, index) => {
+                      {completedTeams.map((team, index) => {
                         const position = index + 1;
-                        const isWinner = team.score === winnerScore;
-                        const medalEmoji = position === 1 ? '🥇' : position === 2 ? '🥈' : position === 3 ? '🥉' : '';
+                        const medalEmoji = position === 1 ? '🥇' : position === 2 ? '🥈' : position === 3 ? '🥉' : '🏆';
                         
                         return (
                           <div 
                             key={team.id} 
-                            className={`flex items-center justify-between rounded-lg p-4 transition-all ${
-                              isWinner 
-                                ? 'bg-white/40 border-2 border-white shadow-lg' 
-                                : 'bg-white/20'
-                            }`}
+                            className="flex items-center justify-between rounded-lg p-4 bg-white/30 transition-all"
                           >
                         <div className="flex items-center gap-3">
-                              <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg ${
-                                isWinner 
-                                  ? 'bg-yellow-400 text-orange-800' 
-                                  : 'bg-white/30 text-white'
-                              }`}>
-                                {medalEmoji || position}
+                              <div className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg bg-white/30 text-white">
+                                {medalEmoji}
                               </div>
                               <div className="text-left">
                                 <span className="font-bold text-lg">{team.name}</span>
@@ -372,8 +388,8 @@ const CompetitiveGame = () => {
                               </div>
                             </div>
                             <div className="text-right">
-                              <div className="text-2xl font-bold">{team.score}</div>
-                              <div className="text-sm opacity-90">точки</div>
+                              <div className="text-lg font-bold">✅</div>
+                              <div className="text-sm opacity-90">завършено</div>
                             </div>
                           </div>
                         );
@@ -417,10 +433,20 @@ const CompetitiveGame = () => {
             onClick={handleBack} 
             variant="outline" 
             size="sm"
-            className="flex items-center gap-2 mb-6 bg-white/80 hover:bg-white border-orange-300"
+            className="flex items-center gap-2 mb-4 bg-white/80 hover:bg-white border-orange-300"
           >
             <ArrowLeft size={18} />
             Назад
+          </Button>
+
+          {/* Developer Button */}
+          <Button 
+            onClick={handleCompleteCompetition} 
+            variant="destructive" 
+            size="sm"
+            className="flex items-center gap-2 mb-6 bg-red-500/80 hover:bg-red-600 text-white border-0"
+          >
+            🚀 Завърши състезанието
           </Button>
 
           <div className="space-y-6">
@@ -468,12 +494,7 @@ const CompetitiveGame = () => {
                         </div>
                       ))}
                     </div>
-                    {currentTeam.score > 0 && (
-                      <div className="mt-3 pt-3 border-t">
-                        <div className="text-sm text-gray-600">Текущ резултат:</div>
-                        <div className="text-2xl font-bold text-green-600">{currentTeam.score} точки</div>
-                      </div>
-                    )}
+
                   </div>
                 </CardContent>
               </Card>

@@ -22,7 +22,7 @@ interface CompetitiveGame {
 const competitiveGames: CompetitiveGame[] = [
   {
     id: "memory",
-    name: "Битка на паметта",
+    name: "Игра на паметта",
     description: "Отборите се редуват в запомняне на картички",
     icon: <Brain className="w-8 h-8" />,
     category: "memory",
@@ -120,7 +120,6 @@ export const CompetitiveDetails = ({ onClose }: CompetitiveDetailsProps) => {
               </div>
               <div>
                 <h3 className="text-2xl font-bold text-gray-800">Състезателни игри</h3>
-                <p className="text-gray-600">Изберете игра за отборното състезание</p>
               </div>
             </div>
           </div>

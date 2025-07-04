@@ -439,9 +439,6 @@ export const LogicGame: React.FC<LogicGameProps> = ({ level, onComplete, onTimeU
       
       requestAnimationFrame(updateProgress);
       
-      const timeBonus = Math.max(0, timeLeft * 10);
-      const completionBonus = 500;
-      const score = timeBonus + completionBonus;
       onComplete();
     }
   }, [drawnPaths.length, levelConfig.requiredConnections, timeLeft, onComplete, isCompleted]);

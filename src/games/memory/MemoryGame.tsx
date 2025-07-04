@@ -8,7 +8,7 @@ import { TimeUpScreen } from "@/components/TimeUpScreen";
 
 interface MemoryGameProps {
   level: GameLevel;
-  onComplete: (score?: number) => void;
+  onComplete: () => void;
   onTimeUp: () => void;
   currentTeam?: any;
   onPlayerTurn?: (playerId: string) => void;
@@ -71,19 +71,11 @@ export const MemoryGame: React.FC<MemoryGameProps> = ({
 
   // Check for game completion
   useEffect(() => {
-    const totalPairs = gridItems.length / 2;
     if (matchedPairs.length === gridItems.length && gridItems.length > 0) {
-      // Game completed - calculate score
-      const baseScore = 100;
-      const timeBonus = Math.max(0, timeLeft * 2); // 2 points per second remaining
-      const movesPenalty = Math.max(0, moves - totalPairs) * 5; // 5 points penalty per extra move
-      const accuracyBonus = totalPairs > 0 ? Math.round((totalPairs / moves) * 100) : 0; // accuracy percentage as bonus
-      
-      const totalScore = Math.max(0, baseScore + timeBonus + accuracyBonus - movesPenalty);
-      
-      onComplete(totalScore);
+      // Game completed
+      onComplete();
     }
-  }, [matchedPairs, gridItems, onComplete, timeLeft, moves]);
+  }, [matchedPairs, gridItems, onComplete]);
 
   // Handle card flip with turn management
   const handleCardClick = (index: number) => {
@@ -156,19 +148,6 @@ export const MemoryGame: React.FC<MemoryGameProps> = ({
           formatTime={formatTime}
           hasStarted={hasStarted}
         />
-        
-        {/* Test button for development */}
-        <div className="mb-4">
-          <button
-            onClick={() => {
-              const testScore = 250 + Math.floor(Math.random() * 100);
-              onComplete(testScore);
-            }}
-            className="px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600 text-sm"
-          >
-            🧪 Test: Complete Round (Score: ~300)
-          </button>
-        </div>
 
         <MemoryGrid 
           gridItems={gridItems}

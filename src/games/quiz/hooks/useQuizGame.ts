@@ -4,7 +4,20 @@ import { GameLevel } from "@/types";
 import { generateQuizQuestions } from "../utils/quizGenerator";
 import { useGameTimer } from "@/hooks/useGameTimer";
 
-export const useQuizGame = (level: GameLevel, onComplete: (score?: number) => void, onTimeUp: () => void) => {
+interface TeamData {
+  id: string;
+  name: string;
+  players: { name: string; id: string }[];
+  score: number;
+}
+
+export const useQuizGame = (
+  level: GameLevel, 
+  onComplete: () => void, 
+  onTimeUp: () => void,
+  currentTeam?: TeamData,
+  onPlayerTurn?: (playerId: string) => void
+) => {
   const [questions, setQuestions] = useState<{ 
     question: string; 
     options: string[];
@@ -15,6 +28,7 @@ export const useQuizGame = (level: GameLevel, onComplete: (score?: number) => vo
   const [score, setScore] = useState(0);
   const [gameStarted, setGameStarted] = useState(false);
   const [feedback, setFeedback] = useState<"correct" | "incorrect" | null>(null);
+  const [currentPlayerIndex, setCurrentPlayerIndex] = useState(0);
   
   // Use the game timer hook
   const { timeLeft, hasStarted, showTimeUpScreen, startTimer, resetTimer } = useGameTimer({
@@ -26,29 +40,33 @@ export const useQuizGame = (level: GameLevel, onComplete: (score?: number) => vo
   // Initialize the game
   useEffect(() => {
     if (gameStarted) {
-      // Number of questions based on difficulty
-      const questionCount = level.difficultyId === "easy" ? 5 : 
+      // Number of questions based on difficulty  
+      const questionCount = currentTeam ? 6 : // Competitive mode: shorter rounds
+                           level.difficultyId === "easy" ? 5 : 
                            level.difficultyId === "medium" ? 8 : 10;
       
-      const quizQuestions = generateQuizQuestions(level.themeId, level.difficultyId, questionCount);
+      // For competitive mode, generate random questions from all themes
+      let themeId = level.themeId;
+      if (currentTeam) {
+        const themes = ["history", "science", "geography"];
+        themeId = themes[Math.floor(Math.random() * themes.length)];
+        console.log(`Competitive quiz: Selected theme ${themeId} for team ${currentTeam.name}`);
+      }
+      
+      console.log(`Generating quiz questions: theme=${themeId}, difficulty=${level.difficultyId}, count=${questionCount}`);
+      const quizQuestions = generateQuizQuestions(themeId, level.difficultyId, questionCount);
+      console.log(`Generated ${quizQuestions.length} questions:`, quizQuestions);
       setQuestions(quizQuestions);
     }
-  }, [gameStarted, level.themeId, level.difficultyId]);
-
-  // Timer is handled by the useGameTimer hook
+  }, [gameStarted, level.themeId, level.difficultyId, currentTeam]);
 
   // Check game completion
   useEffect(() => {
     if (questions.length > 0 && currentQuestionIndex >= questions.length) {
-      // Game completed - calculate final score
-      const baseScore = score; // Score already calculated per correct answer
-      const timeBonus = Math.max(0, timeLeft * 2); // 2 points per second remaining
-      
-      const totalScore = baseScore + timeBonus;
-      
-      onComplete(totalScore);
+      // Game completed
+      onComplete();
     }
-  }, [currentQuestionIndex, questions.length, onComplete, score, timeLeft]);
+  }, [currentQuestionIndex, questions.length, onComplete]);
 
   const handleOptionSelect = (optionIndex: number) => {
     if (feedback !== null) return;
@@ -62,10 +80,8 @@ export const useQuizGame = (level: GameLevel, onComplete: (score?: number) => vo
     setFeedback(isCorrect ? "correct" : "incorrect");
     
     if (isCorrect) {
-      // Add points based on difficulty
-      const pointsPerQuestion = level.difficultyId === "easy" ? 10 : 
-                               level.difficultyId === "medium" ? 15 : 20;
-      setScore(prev => prev + pointsPerQuestion);
+      // Track correct answer
+      setScore(prev => prev + 1);
     }
     
     // Move to next question after a delay
@@ -73,6 +89,13 @@ export const useQuizGame = (level: GameLevel, onComplete: (score?: number) => vo
       setSelectedOption(null);
       setFeedback(null);
       setCurrentQuestionIndex(prev => prev + 1);
+      
+      // In competitive mode, switch to next player after each question
+      if (currentTeam && onPlayerTurn && isCorrect) {
+        const nextPlayerIndex = (currentPlayerIndex + 1) % currentTeam.players.length;
+        setCurrentPlayerIndex(nextPlayerIndex);
+        onPlayerTurn(currentTeam.players[nextPlayerIndex].id);
+      }
     }, 2000);
   };
 
@@ -87,8 +110,12 @@ export const useQuizGame = (level: GameLevel, onComplete: (score?: number) => vo
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Get theme title
+  // Get theme title - for competitive mode, show mixed themes
   const getThemeTitle = () => {
+    if (currentTeam) {
+      return "Блицвикторина - Смесени въпроси";
+    }
+    
     switch (level.themeId) {
       case "history": return "История";
       case "science": return "Наука";
@@ -114,6 +141,8 @@ export const useQuizGame = (level: GameLevel, onComplete: (score?: number) => vo
     handleStartGame,
     formatTime,
     getThemeTitle,
-    resetTimer
+    resetTimer,
+    currentPlayerIndex,
+    setCurrentPlayerIndex
   };
 };

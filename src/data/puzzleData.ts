@@ -10,9 +10,10 @@ export const themes: Record<string, Theme[]> = {
     { id: "patterns", name: "Свържи еднакви", color: "#8B5CF6", icon: "🔍" },
   ],
   math: [
-    { id: "addition", name: "Събиране", color: "#8B5CF6", icon: "➕" },
-    { id: "subtraction", name: "Изваждане", color: "#EC4899", icon: "➖" },
+    { id: "addition", name: "Събиране", color: "#10B981", icon: "➕" },
+    { id: "subtraction", name: "Изваждане", color: "#F59E0B", icon: "➖" },
     { id: "multiplication", name: "Умножение", color: "#3B82F6", icon: "✖️" },
+    { id: "division", name: "Деление", color: "#EF4444", icon: "➗" },
   ],
   words: [
     { id: "sport", name: "Спорт", color: "#8B5CF6", icon: "🏆" },
@@ -40,6 +41,14 @@ export const difficulties: Difficulty[] = [
 
 export const normalDifficulty: Difficulty[] = [
   { id: "medium", name: "Нормално", color: "#F59E0B" },
+];
+
+// Math-specific operation selector (replaces difficulty for math)
+export const mathOperations: Difficulty[] = [
+  { id: "addition", name: "Събиране", color: "#10B981" },
+  { id: "subtraction", name: "Изваждане", color: "#F59E0B" },
+  { id: "multiplication", name: "Умножение", color: "#3B82F6" },
+  { id: "division", name: "Деление", color: "#EF4444" },
 ];
 
 export const levelDetails: Record<string, LevelDetails> = {
@@ -113,11 +122,11 @@ export const puzzleCategories: PuzzleCategory[] = [
   },
   {
     id: "math",
-    name: "Математически предизвикателства",
+    name: "Математическа игра",
     icon: "calculator.png",
     backgroundColor: "#FCE7F3",
     themes: themes.math,
-    difficulties: difficulties,
+    difficulties: mathOperations, // Use operations instead of traditional difficulties
     levels: [
       { id: 1 },
       { id: 2 },
