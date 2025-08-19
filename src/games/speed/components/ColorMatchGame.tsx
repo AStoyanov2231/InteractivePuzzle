@@ -5,35 +5,55 @@ interface ColorMatchGameProps {
   onCorrect: () => void;
   onIncorrect: () => void;
   gameActive: boolean;
+  difficulty: string; // Add difficulty prop
 }
 
-type ColorOption = "green" | "blue";
+type ColorOption = "green" | "blue" | "red";
 
 export const ColorMatchGame: React.FC<ColorMatchGameProps> = ({
   speed,
   onCorrect,
   onIncorrect,
-  gameActive
+  gameActive,
+  difficulty
 }) => {
   const [targetColor, setTargetColor] = useState<ColorOption>("green");
-  const [leftColor, setLeftColor] = useState<ColorOption>("green");
-  const [rightColor, setRightColor] = useState<ColorOption>("blue");
-  const timerRef = useRef<NodeJS.Timeout | null>(null); // Use useRef for timer ID
+  const [squareColors, setSquareColors] = useState<ColorOption[]>(["green", "blue"]);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   const colors = {
     green: "#22c55e", // Tailwind green-500
     blue: "#3b82f6",  // Tailwind blue-500
+    red: "#ef4444",   // Tailwind red-500
+  };
+
+  const colorNames = {
+    green: "Зелено",
+    blue: "Синьо", 
+    red: "Червено"
+  };
+
+  // Get available colors based on difficulty
+  const getAvailableColors = (): ColorOption[] => {
+    if (difficulty === "hard") {
+      return ["green", "blue", "red"];
+    }
+    return ["green", "blue"];
   };
 
   // Generates and sets new colors for the target and options
   const generateAndSetNewColors = useCallback(() => {
-    const newTargetColor = Math.random() < 0.5 ? "green" : "blue";
-    const isGreenOnLeft = Math.random() < 0.5;
+    const availableColors = getAvailableColors();
+    
+    // Pick random target color
+    const newTargetColor = availableColors[Math.floor(Math.random() * availableColors.length)];
+    
+    // Shuffle available colors for squares
+    const shuffledColors = [...availableColors].sort(() => Math.random() - 0.5);
     
     setTargetColor(newTargetColor);
-    setLeftColor(isGreenOnLeft ? "green" : "blue");
-    setRightColor(isGreenOnLeft ? "blue" : "green");
-  }, []); // Empty dependency array: this function doesn't change
+    setSquareColors(shuffledColors);
+  }, [difficulty]);
 
   // Function to start the automatic color change timer
   const startAutomaticColorChange = useCallback(() => {
@@ -41,39 +61,36 @@ export const ColorMatchGame: React.FC<ColorMatchGameProps> = ({
       clearTimeout(timerRef.current);
     }
     timerRef.current = setTimeout(() => {
-      if (gameActive) { // Check if game is still active before changing
+      if (gameActive) {
         generateAndSetNewColors();
-        startAutomaticColorChange(); // Schedule the next automatic change
+        startAutomaticColorChange();
       }
-    }, speed); // Use the speed prop (should be 1000ms)
-  }, [speed, gameActive, generateAndSetNewColors]); // Dependencies
+    }, speed);
+  }, [speed, gameActive, generateAndSetNewColors]);
 
   // Effect to manage the game state and timers
   useEffect(() => {
     if (gameActive) {
-      generateAndSetNewColors(); // Initial color setup
-      startAutomaticColorChange(); // Start the timer
+      generateAndSetNewColors();
+      startAutomaticColorChange();
     } else {
-      // Clear timer if game becomes inactive
       if (timerRef.current) {
         clearTimeout(timerRef.current);
         timerRef.current = null;
       }
     }
 
-    // Cleanup function to clear timer when component unmounts or gameActive changes
     return () => {
       if (timerRef.current) {
         clearTimeout(timerRef.current);
         timerRef.current = null;
       }
     };
-  }, [gameActive, speed, generateAndSetNewColors, startAutomaticColorChange]); // Added startAutomaticColorChange
+  }, [gameActive, speed, generateAndSetNewColors, startAutomaticColorChange]);
 
   const handleColorClick = useCallback((selectedColor: ColorOption) => {
-    if (!gameActive) return; // Do nothing if game is not active
+    if (!gameActive) return;
 
-    // Clear the existing automatic timer
     if (timerRef.current) {
       clearTimeout(timerRef.current);
       timerRef.current = null;
@@ -85,14 +102,12 @@ export const ColorMatchGame: React.FC<ColorMatchGameProps> = ({
       onIncorrect();
     }
     
-    // Generate new colors immediately after player's choice
     generateAndSetNewColors();
-    
-    // Restart the automatic timer for the next color change
-    // This ensures the next change is 'speed' ms from this click
-    startAutomaticColorChange(); 
-
+    startAutomaticColorChange();
   }, [gameActive, targetColor, onCorrect, onIncorrect, generateAndSetNewColors, startAutomaticColorChange]);
+
+  const isHard = difficulty === "hard";
+  const gridCols = isHard ? "grid-cols-3" : "grid-cols-2";
 
   return (
     <div className="flex flex-col items-center w-full max-w-2xl">
@@ -104,29 +119,23 @@ export const ColorMatchGame: React.FC<ColorMatchGameProps> = ({
             boxShadow: `0 10px 15px -3px ${colors[targetColor]}40`
           }}
         >
-          {targetColor === "green" ? "Зелено" : "Синьо"}
+          {colorNames[targetColor]}
         </div>
       </div>
       
-      <div className="grid grid-cols-2 gap-8 w-full">
-        <button
-          onClick={() => handleColorClick(leftColor)}
-          className="aspect-square rounded-3xl shadow-lg transform transition-all hover:scale-105 active:scale-95 focus:outline-none"
-          style={{ 
-            backgroundColor: colors[leftColor],
-            boxShadow: `0 10px 15px -3px ${colors[leftColor]}40`
-          }}
-          disabled={!gameActive}
-        />
-        <button
-          onClick={() => handleColorClick(rightColor)}
-          className="aspect-square rounded-3xl shadow-lg transform transition-all hover:scale-105 active:scale-95 focus:outline-none"
-          style={{ 
-            backgroundColor: colors[rightColor],
-            boxShadow: `0 10px 15px -3px ${colors[rightColor]}40`
-          }}
-          disabled={!gameActive}
-        />
+      <div className={`grid ${gridCols} gap-8 w-full`}>
+        {squareColors.map((color, index) => (
+          <button
+            key={index}
+            onClick={() => handleColorClick(color)}
+            className="aspect-square rounded-3xl shadow-lg transform transition-all hover:scale-105 active:scale-95 focus:outline-none"
+            style={{ 
+              backgroundColor: colors[color],
+              boxShadow: `0 10px 15px -3px ${colors[color]}40`
+            }}
+            disabled={!gameActive}
+          />
+        ))}
       </div>
     </div>
   );

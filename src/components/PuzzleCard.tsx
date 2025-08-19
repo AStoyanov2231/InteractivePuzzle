@@ -18,15 +18,12 @@ export const PuzzleCard = React.memo(({ category, onClick, className, disabled =
 
   const handleImageError = useCallback((event: React.SyntheticEvent<HTMLImageElement>) => {
     setImageError(true);
-    // Try fallback to external image
-    const img = event.target as HTMLImageElement;
-    if (img && !img.src.includes('github.io')) {
-      img.src = `https://astoyanov2231.github.io/InteractivePuzzle-Assets/images/categories/${category.icon}`;
-    }
+    console.warn(`Failed to load image from CDN: ${category.icon}`);
   }, [category.icon]);
 
-  // Use local images first, fallback to external automatically on error
-  const imageUrl = `/assets/images/categories/${category.icon}`;
+  // Use CDN images only - local assets commented out
+  // const imageUrl = `/assets/images/categories/${category.icon}`;
+  const imageUrl = `https://astoyanov2231.github.io/InteractivePuzzle-Assets/images/categories/${category.icon}`;
 
   return (
     <div

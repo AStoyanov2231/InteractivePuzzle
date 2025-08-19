@@ -395,7 +395,7 @@ export const LogicGame: React.FC<LogicGameProps> = ({ level, onComplete, onTimeU
   const [isDrawing, setIsDrawing] = useState(false);
   const [drawingFrom, setDrawingFrom] = useState<{ row: number; col: number; color: string } | null>(null);
   const [currentPath, setCurrentPath] = useState<PathPoint[]>([]);
-  const [timeLeft, setTimeLeft] = useState(levelConfig.timeLimit);
+  const [timeElapsed, setTimeElapsed] = useState(0);
   const [cellSize, setCellSize] = useState(64);
   const [isPathBroken, setIsPathBroken] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
@@ -410,7 +410,7 @@ export const LogicGame: React.FC<LogicGameProps> = ({ level, onComplete, onTimeU
     setIsDrawing(false);
     setDrawingFrom(null);
     setCurrentPath([]);
-    setTimeLeft(newLevelConfig.timeLimit);
+    setTimeElapsed(0);
     setIsPathBroken(false);
     setIsCompleted(false);
     setCompletionProgress(0);
@@ -441,16 +441,16 @@ export const LogicGame: React.FC<LogicGameProps> = ({ level, onComplete, onTimeU
       
       onComplete();
     }
-  }, [drawnPaths.length, levelConfig.requiredConnections, timeLeft, onComplete, isCompleted]);
+  }, [drawnPaths.length, levelConfig.requiredConnections, onComplete, isCompleted]);
 
+  // Start the stopwatch timer
   useEffect(() => {
-    if (timeLeft > 0) {
-      const timer = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
-      return () => clearTimeout(timer);
-    } else {
-      onTimeUp();
-    }
-  }, [timeLeft, onTimeUp]);
+    const timer = setInterval(() => {
+      setTimeElapsed(prev => prev + 1);
+    }, 1000);
+    
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     const updateCellSize = () => {
@@ -732,7 +732,7 @@ export const LogicGame: React.FC<LogicGameProps> = ({ level, onComplete, onTimeU
     <LogicGameUI
       ref={gridRef}
       level={level}
-      timeLeft={timeLeft}
+      timeLeft={timeElapsed}
       drawnPaths={drawnPaths}
       requiredConnections={levelConfig.requiredConnections}
       gridSize={levelConfig.gridSize}

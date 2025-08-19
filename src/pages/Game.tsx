@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { puzzleCategories } from "@/data/puzzleData";
 import { GameManager } from "@/games/GameManager";
 import { FullscreenButton } from "@/components/FullscreenButton";
+import { UsernameDialog } from "@/components/UsernameDialog";
 import { GameLevel } from "@/types";
 
 const Game = () => {
@@ -17,6 +18,8 @@ const Game = () => {
   const [gameData, setGameData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [showUsernameDialog, setShowUsernameDialog] = useState(true);
+  const [username, setUsername] = useState<string>("");
 
   useEffect(() => {
     if (categoryId && numericLevelId) {
@@ -53,8 +56,17 @@ const Game = () => {
     setLoading(false);
   }, [categoryId, numericLevelId, navigate, location.state]);
 
+  const handleUsernameSubmit = (enteredUsername: string) => {
+    setUsername(enteredUsername);
+    setShowUsernameDialog(false);
+    
+    // Store username in localStorage for the session
+    localStorage.setItem('currentPlayerName', enteredUsername);
+  };
+
   const handleBack = () => {
-    // Navigate back to home screen
+    // Clear username when going back
+    localStorage.removeItem('currentPlayerName');
     navigate("/");
   };
 
@@ -78,16 +90,12 @@ const Game = () => {
 
   if (errorMessage) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-orange-400 via-orange-200 to-orange-200 flex flex-col items-center justify-center relative">
-        <FullscreenButton className="fixed top-4 right-4 z-50" />
-        <div className="bg-white/60 backdrop-blur-sm p-8 rounded-3xl shadow-lg text-center">
-          <h1 className="text-2xl font-bold mb-4">Грешка</h1>
-          <p className="text-red-600 mb-6">{errorMessage}</p>
-          <Button 
-            onClick={() => navigate("/")}
-            className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-6 py-3 rounded-xl font-semibold"
-          >
-            Обратно към меню
+      <div className="min-h-screen bg-gradient-to-br from-orange-400 via-orange-200 to-orange-200 flex items-center justify-center">
+        <div className="bg-white/60 backdrop-blur-sm p-8 rounded-3xl shadow-lg text-center max-w-md">
+          <div className="text-xl font-semibold text-red-600 mb-4">Грешка</div>
+          <div className="text-gray-700 mb-6">{errorMessage}</div>
+          <Button onClick={handleBack} variant="outline">
+            Назад към началото
           </Button>
         </div>
       </div>
@@ -96,22 +104,34 @@ const Game = () => {
 
   if (!gameData) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-orange-400 via-orange-200 to-orange-200 flex flex-col items-center justify-center relative">
-        <FullscreenButton className="fixed top-4 right-4 z-50" />
-        <div className="bg-white/60 backdrop-blur-sm p-8 rounded-3xl shadow-lg text-center">
-          <h1 className="text-2xl font-bold mb-4">Нивото не беше намерено</h1>
-          <Button 
-            onClick={() => navigate("/")}
-            className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-6 py-3 rounded-xl font-semibold"
-          >
-            Обратно към меню
-          </Button>
+      <div className="min-h-screen bg-gradient-to-br from-orange-400 via-orange-200 to-orange-200 flex items-center justify-center">
+        <div className="bg-white/60 backdrop-blur-sm p-8 rounded-3xl shadow-lg">
+          <div className="text-xl font-semibold text-gray-700">Зареждане...</div>
         </div>
       </div>
     );
   }
 
   const { level, category } = gameData;
+
+  // Show username dialog if no username is set
+  if (showUsernameDialog || !username) {
+    return (
+      <>
+        <div className="min-h-screen bg-gradient-to-br from-orange-400 via-orange-200 to-orange-200 flex items-center justify-center">
+          <div className="bg-white/60 backdrop-blur-sm p-8 rounded-3xl shadow-lg text-center max-w-md">
+            <div className="text-xl font-semibold text-gray-700">Подготвяне на играта...</div>
+          </div>
+        </div>
+        
+        <UsernameDialog 
+          open={showUsernameDialog}
+          onSubmit={handleUsernameSubmit}
+          categoryName={category?.name || "игра"}
+        />
+      </>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-400 via-orange-200 to-orange-200 p-4 relative overflow-hidden">
@@ -133,6 +153,9 @@ const Game = () => {
             <h1 className="text-lg font-bold text-gray-800">{category?.name}</h1>
           </div>
         </div>
+        <div className="bg-white/60 backdrop-blur-sm px-4 py-2 rounded-xl shadow-sm border border-white/20">
+          <span className="text-sm font-medium text-gray-700">Играч: {username}</span>
+        </div>
       </div>
 
       {/* Game Content Container - Calculated height for single viewport */}
@@ -145,7 +168,7 @@ const Game = () => {
               categoryId={categoryId || ""} 
               level={level} 
               onComplete={handleGameComplete} 
-              onTimeUp={handleTimeUp} 
+              onTimeUp={handleTimeUp}
             />
           </div>
         </div>

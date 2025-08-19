@@ -1,13 +1,14 @@
 
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { Shuffle } from "lucide-react";
+import { Shuffle, CheckCircle } from "lucide-react";
 
 interface MemoryGameControlsProps {
   timeLeft: number;
   moves: number;
   maxMoves: number;
   onReset: () => void;
+  onComplete?: () => void;
   formatTime: (seconds: number) => string;
   hasStarted?: boolean;
 }
@@ -17,6 +18,7 @@ export const MemoryGameControls: React.FC<MemoryGameControlsProps> = ({
   moves,
   maxMoves,
   onReset,
+  onComplete,
   formatTime,
   hasStarted = false
 }) => {
@@ -30,15 +32,28 @@ export const MemoryGameControls: React.FC<MemoryGameControlsProps> = ({
           Ходове: {moves}/{maxMoves}
         </div>
       </div>
-      <Button 
-        variant="outline" 
-        size="lg" 
-        onClick={onReset}
-        className="bg-white/60 hover:bg-white/80 border-gray-300 text-gray-700 px-6 py-3 rounded-xl font-semibold backdrop-blur-sm"
-      >
-        <Shuffle className="w-5 h-5 mr-2" />
-        Разбъркай
-      </Button>
+      <div className="flex gap-2">
+        {onComplete && (
+          <Button 
+            variant="outline" 
+            size="lg" 
+            onClick={onComplete}
+            className="bg-green-100 hover:bg-green-200 border-green-300 text-green-700 px-6 py-3 rounded-xl font-semibold backdrop-blur-sm"
+          >
+            <CheckCircle className="w-5 h-5 mr-2" />
+            Завърши играта
+          </Button>
+        )}
+        <Button 
+          variant="outline" 
+          size="lg" 
+          onClick={onReset}
+          className="bg-white/60 hover:bg-white/80 border-gray-300 text-gray-700 px-6 py-3 rounded-xl font-semibold backdrop-blur-sm"
+        >
+          <Shuffle className="w-5 h-5 mr-2" />
+          Разбъркай
+        </Button>
+      </div>
     </div>
   );
 };

@@ -58,11 +58,11 @@ const generateSpeedLevels = (): GameLevel[] => {
         themeId,
         difficultyId,
         isLocked: false,
-        title: difficultyId === "easy" ? "Нормална скорост" : "Висока скорост",
+        title: difficultyId === "easy" ? "Нормална скорост - 2 цвята" : "Много висока скорост - 3 цвята",
         description: "Скоростна игра с цветове",
         timeLimit: 60,
         moves: 30,
-        grid: "2×1",
+        grid: difficultyId === "easy" ? "2×1" : "3×1",
       });
       
       levelCounter++;

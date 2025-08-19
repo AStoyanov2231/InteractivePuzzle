@@ -3,7 +3,9 @@ import { Button } from "@/components/ui/button";
 import { GameLevel } from "@/types";
 import { Check, RefreshCw, X, Trophy, Home } from "lucide-react";
 import { useGameTimer } from "@/hooks/useGameTimer";
+import { useNavigate } from "react-router-dom";
 import { TimeUpScreen } from "@/components/TimeUpScreen";
+import { gameStatsService } from "@/services/gameStatsService";
 import { 
   generateMathProblems, 
   type MathProblem, 
@@ -22,6 +24,7 @@ interface MathGameProps {
 
 
 export const MathGame: React.FC<MathGameProps> = ({ level, onComplete, onTimeUp, currentTeam, onPlayerTurn }) => {
+  const navigate = useNavigate();
   const [problems, setProblems] = useState<MathProblem[]>([]);
   const [currentProblemIndex, setCurrentProblemIndex] = useState(0);
   const [dragItems, setDragItems] = useState<DragItem[]>([]);
@@ -30,7 +33,6 @@ export const MathGame: React.FC<MathGameProps> = ({ level, onComplete, onTimeUp,
   const [feedback, setFeedback] = useState<"correct" | "incorrect" | null>(null);
   const [draggedItem, setDraggedItem] = useState<string | null>(null);
   const [showCompletionScreen, setShowCompletionScreen] = useState(false);
-  const [countdown, setCountdown] = useState(3);
   const [currentPlayerIndex, setCurrentPlayerIndex] = useState(0);
   const [touchState, setTouchState] = useState<TouchState>({
     isDragging: false,
@@ -45,8 +47,7 @@ export const MathGame: React.FC<MathGameProps> = ({ level, onComplete, onTimeUp,
   
   // Use the game timer hook
   const { timeLeft, hasStarted, showTimeUpScreen, startTimer, resetTimer } = useGameTimer({
-    initialTime: level.timeLimit,
-    onTimeUp
+    enabled: true
   });
   
   // Initialize the game
@@ -86,24 +87,11 @@ export const MathGame: React.FC<MathGameProps> = ({ level, onComplete, onTimeUp,
       } else {
         // In regular mode, show completion screen
         setShowCompletionScreen(true);
-        setCountdown(3);
       }
     }
   }, [currentProblemIndex, problems.length, showCompletionScreen, currentTeam, onComplete]);
 
-  // Handle countdown and navigation after completion
-  useEffect(() => {
-    if (showCompletionScreen && countdown > 0) {
-      const timer = setTimeout(() => {
-        setCountdown(prev => prev - 1);
-      }, 1000);
-      
-      return () => clearTimeout(timer);
-    } else if (showCompletionScreen && countdown === 0) {
-      // Navigate to home screen
-      window.location.href = '/';
-    }
-  }, [showCompletionScreen, countdown]);
+  // Removed countdown logic - user clicks button to return home
 
   const handleDragStart = (e: React.DragEvent, itemId: string) => {
     setDraggedItem(itemId);
@@ -392,7 +380,6 @@ export const MathGame: React.FC<MathGameProps> = ({ level, onComplete, onTimeUp,
     setDroppedItems({});
     setFeedback(null);
     setShowCompletionScreen(false);
-    setCountdown(3);
     setCurrentPlayerIndex(0);
     resetTimer();
     setCorrectAnswers(0);
@@ -439,45 +426,48 @@ export const MathGame: React.FC<MathGameProps> = ({ level, onComplete, onTimeUp,
   }
 
   if (showCompletionScreen) {
-    console.log("Rendering completion screen, correct answers:", correctAnswers);
+    const incorrectAnswers = problems.length - correctAnswers;
+    const username = localStorage.getItem('currentPlayerName') || 'Играч';
+    
     return (
       <div className="flex flex-col items-center justify-center w-full max-w-4xl mx-auto py-12">
         <div className="bg-white rounded-lg shadow-xl p-8 text-center max-w-md w-full">
           <div className="mb-6">
             <Trophy className="w-16 h-16 text-yellow-500 mx-auto mb-4" />
-            <h2 className="text-3xl font-bold text-green-600 mb-2">Браво!</h2>
-            <p className="text-lg text-gray-700 mb-4">Завърши всички 8 задачи!</p>
+            <h2 className="text-3xl font-bold text-green-600 mb-2">Браво, {username}!</h2>
+            <p className="text-lg text-gray-700 mb-4">Завърши всички {problems.length} задачи!</p>
             
             <div className="bg-gradient-to-r from-blue-50 to-green-50 p-4 rounded-lg mb-6">
-              <div className="text-sm text-gray-600 mb-2">Резултат:</div>
-              <div className="text-4xl font-bold text-blue-600">{correctAnswers}/{problems.length}</div>
-              <div className="text-sm text-gray-500 mt-1">
-                Верни отговори
+              <div className="grid grid-cols-2 gap-4 mb-3">
+                <div>
+                  <div className="text-sm text-gray-600">Време:</div>
+                  <div className="text-xl font-bold text-blue-600">{formatTime(timeLeft)}</div>
+                </div>
+                <div>
+                  <div className="text-sm text-gray-600">Резултат:</div>
+                  <div className="text-xl font-bold text-green-600">{correctAnswers}/{problems.length}</div>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <div className="text-sm text-green-600">Верни:</div>
+                  <div className="text-lg font-bold text-green-600">{correctAnswers}</div>
+                </div>
+                <div>
+                  <div className="text-sm text-red-600">Грешни:</div>
+                  <div className="text-lg font-bold text-red-600">{incorrectAnswers}</div>
+                </div>
               </div>
             </div>
           </div>
           
-          <div className="flex items-center justify-center gap-3 text-gray-600">
-            <Home className="w-5 h-5" />
-            <span>Връщане към началото след {countdown} сек...</span>
-          </div>
-          
-          <div className="mt-4">
-            <div className="w-full bg-gray-200 rounded-full h-2">
-              <div 
-                className="bg-blue-500 h-2 rounded-full transition-all duration-1000"
-                style={{ width: `${((3 - countdown) / 3) * 100}%` }}
-              ></div>
-            </div>
-          </div>
-          
           <Button 
-            onClick={() => window.location.href = '/'} 
+            onClick={() => navigate('/')} 
             variant="outline" 
-            className="mt-4 w-full"
+            className="w-full"
           >
             <Home className="w-4 h-4 mr-2" />
-            Към началото сега
+            Към началото
           </Button>
         </div>
       </div>
@@ -551,6 +541,28 @@ export const MathGame: React.FC<MathGameProps> = ({ level, onComplete, onTimeUp,
           )}
         </div>
         <div className="flex gap-2">
+          {!currentTeam && (
+            <Button variant="outline" size="sm" onClick={async () => {
+              // Submit stats when completing game
+              if (gameStatsService.isSinglePlayerMode(currentTeam)) {
+                try {
+                  await gameStatsService.submitMathGameStats({
+                    correctAnswers,
+                    totalProblems: problems.length,
+                    timeElapsed: timeLeft,
+                  });
+                  console.log('Stats submitted via Complete Game button');
+                } catch (error) {
+                  console.error('Failed to submit stats:', error);
+                }
+              }
+              
+              setShowCompletionScreen(true);
+            }} className="bg-green-100 hover:bg-green-200 border-green-300 text-green-700">
+              <Check className="w-4 h-4 mr-2" />
+              Завърши играта
+            </Button>
+          )}
           <Button variant="outline" size="sm" onClick={handleSolve}>
             🧠 Реши
           </Button>

@@ -1,13 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
 
 interface UseGameTimerProps {
-  initialTime: number;
-  onTimeUp: () => void;
+  initialTime?: number; // Made optional since we're now using stopwatch
+  onTimeUp?: () => void; // Made optional since there's no time limit
   enabled?: boolean;
 }
 
-export const useGameTimer = ({ initialTime, onTimeUp, enabled = true }: UseGameTimerProps) => {
-  const [timeLeft, setTimeLeft] = useState(initialTime);
+export const useGameTimer = ({ initialTime = 0, onTimeUp, enabled = true }: UseGameTimerProps) => {
+  const [timeElapsed, setTimeElapsed] = useState(0); // Changed from timeLeft to timeElapsed
   const [hasStarted, setHasStarted] = useState(false);
   const [showTimeUpScreen, setShowTimeUpScreen] = useState(false);
 
@@ -20,34 +20,27 @@ export const useGameTimer = ({ initialTime, onTimeUp, enabled = true }: UseGameT
 
   // Reset timer
   const resetTimer = useCallback(() => {
-    setTimeLeft(initialTime);
+    setTimeElapsed(0); // Reset to 0 for stopwatch
     setHasStarted(false);
     setShowTimeUpScreen(false);
-  }, [initialTime]);
+  }, []);
 
-  // Timer effect
+  // Timer effect - now counts up instead of down
   useEffect(() => {
-    if (!enabled || !hasStarted || timeLeft <= 0) return;
+    if (!enabled || !hasStarted) return;
 
     const timer = window.setInterval(() => {
-      setTimeLeft(prev => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          setShowTimeUpScreen(true);
-          onTimeUp();
-          return 0;
-        }
-        return prev - 1;
-      });
+      setTimeElapsed(prev => prev + 1); // Count up instead of down
     }, 1000);
 
     return () => {
       if (timer) clearInterval(timer);
     };
-  }, [enabled, hasStarted, timeLeft, onTimeUp]);
+  }, [enabled, hasStarted]);
 
   return {
-    timeLeft,
+    timeLeft: timeElapsed, // Return timeElapsed but keep the same name for compatibility
+    timeElapsed, // Also provide timeElapsed for clarity
     hasStarted,
     showTimeUpScreen,
     startTimer,

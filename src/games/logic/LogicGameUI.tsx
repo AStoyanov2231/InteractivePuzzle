@@ -306,14 +306,25 @@ export const LogicGameUI = forwardRef<HTMLDivElement, LogicGameUIProps>(({
         </div>
         
         {!isCompleted && (
-          <button
-            onClick={onClearPaths}
-            className="flex items-center justify-center gap-2 px-3 lg:px-4 py-2 lg:py-3 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-xl 
-                     hover:from-red-600 hover:to-red-700 active:scale-95 transition-all duration-200 shadow-lg hover:shadow-xl min-w-[140px] lg:w-full"
-          >
-            <RotateCcw className="w-4 h-4" />
-            <span className="font-medium text-sm lg:text-base">Изчисти</span>
-          </button>
+          <>
+            <button
+              onClick={onClearPaths}
+              className="flex items-center justify-center gap-2 px-3 lg:px-4 py-2 lg:py-3 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-xl 
+                       hover:from-red-600 hover:to-red-700 active:scale-95 transition-all duration-200 shadow-lg hover:shadow-xl min-w-[140px] lg:w-full"
+            >
+              <RotateCcw className="w-4 h-4" />
+              <span className="font-medium text-sm lg:text-base">Изчисти</span>
+            </button>
+            
+            <button
+              onClick={onNextLevel}
+              className="flex items-center justify-center gap-2 px-3 lg:px-4 py-2 lg:py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl 
+                       hover:from-green-600 hover:to-green-700 active:scale-95 transition-all duration-200 shadow-lg hover:shadow-xl min-w-[140px] lg:w-full"
+            >
+              <CheckCircle className="w-4 h-4" />
+              <span className="font-medium text-sm lg:text-base">Завърши играта</span>
+            </button>
+          </>
         )}
 
         {isCompleted && (

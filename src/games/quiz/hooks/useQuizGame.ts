@@ -26,14 +26,14 @@ export const useQuizGame = (
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [score, setScore] = useState(0);
+  const [totalAttempts, setTotalAttempts] = useState(0);
   const [gameStarted, setGameStarted] = useState(false);
+  const [showCompletionScreen, setShowCompletionScreen] = useState(false);
   const [feedback, setFeedback] = useState<"correct" | "incorrect" | null>(null);
   const [currentPlayerIndex, setCurrentPlayerIndex] = useState(0);
   
   // Use the game timer hook
   const { timeLeft, hasStarted, showTimeUpScreen, startTimer, resetTimer } = useGameTimer({
-    initialTime: level.timeLimit,
-    onTimeUp,
     enabled: gameStarted
   });
   
@@ -78,6 +78,7 @@ export const useQuizGame = (
     
     const isCorrect = optionIndex === questions[currentQuestionIndex].correctIndex;
     setFeedback(isCorrect ? "correct" : "incorrect");
+    setTotalAttempts(prev => prev + 1);
     
     if (isCorrect) {
       // Track correct answer
@@ -124,6 +125,16 @@ export const useQuizGame = (
     }
   };
 
+  // Complete game immediately for testing
+  const completeGame = () => {
+    if (currentTeam) {
+      setCurrentQuestionIndex(questions.length);
+      onComplete();
+    } else {
+      setShowCompletionScreen(true);
+    }
+  };
+
   return {
     questions,
     currentQuestionIndex,
@@ -143,6 +154,9 @@ export const useQuizGame = (
     getThemeTitle,
     resetTimer,
     currentPlayerIndex,
-    setCurrentPlayerIndex
+    setCurrentPlayerIndex,
+    completeGame,
+    totalAttempts,
+    showCompletionScreen
   };
 };

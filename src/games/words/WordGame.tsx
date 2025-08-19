@@ -2,7 +2,9 @@ import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { GameLevel } from "@/types";
 import { Check, RefreshCw, Lightbulb, Trophy, Home } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { useGameTimer } from "@/hooks/useGameTimer";
+import { gameStatsService } from "@/services/gameStatsService";
 import { TimeUpScreen } from "@/components/TimeUpScreen";
 import { wordBanks } from "@/games/words/wordBanks";
 
@@ -104,6 +106,7 @@ const generateWordPuzzle = (themeId: string, difficultyId: string) => {
 };
 
 export const WordGame: React.FC<WordGameProps> = ({ level, onComplete, onTimeUp }) => {
+  const navigate = useNavigate();
   const [puzzle, setPuzzle] = useState<{ 
     words: string[]; 
     puzzles: WordPuzzle[] 
@@ -115,9 +118,10 @@ export const WordGame: React.FC<WordGameProps> = ({ level, onComplete, onTimeUp 
   const [hintsUsed, setHintsUsed] = useState(0);
   const [revealedPositions, setRevealedPositions] = useState<Set<number>>(new Set());
   const [showCompletionScreen, setShowCompletionScreen] = useState(false);
-  const [countdown, setCountdown] = useState(3);
   const [draggedItem, setDraggedItem] = useState<string | null>(null);
   const [guesses, setGuesses] = useState<{ word: string; description: string }[]>([]);
+  const [correctAnswers, setCorrectAnswers] = useState(0);
+  const [totalAttempts, setTotalAttempts] = useState(0);
   const [touchState, setTouchState] = useState<TouchState>({
     isDragging: false,
     draggedItemId: null,
@@ -130,8 +134,7 @@ export const WordGame: React.FC<WordGameProps> = ({ level, onComplete, onTimeUp 
   const dropZoneRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
   
   const { timeLeft, hasStarted, showTimeUpScreen, startTimer, resetTimer } = useGameTimer({
-    initialTime: level.timeLimit,
-    onTimeUp
+    enabled: true
   });
   
   // Initialize the game
@@ -173,21 +176,8 @@ export const WordGame: React.FC<WordGameProps> = ({ level, onComplete, onTimeUp 
   useEffect(() => {
     if (puzzle && wordIndex >= puzzle.puzzles.length && !showCompletionScreen) {
       setShowCompletionScreen(true);
-      setCountdown(3);
     }
   }, [wordIndex, puzzle, showCompletionScreen]);
-
-  // Handle countdown and navigation after completion
-  useEffect(() => {
-    if (showCompletionScreen && countdown > 0) {
-      const timer = setTimeout(() => {
-        setCountdown(prev => prev - 1);
-      }, 1000);
-      return () => clearTimeout(timer);
-    } else if (showCompletionScreen && countdown === 0) {
-      window.location.href = '/';
-    }
-  }, [showCompletionScreen, countdown]);
 
   const handleDragStart = (e: React.DragEvent, itemId: string) => {
     setDraggedItem(itemId);
@@ -398,9 +388,11 @@ export const WordGame: React.FC<WordGameProps> = ({ level, onComplete, onTimeUp 
     
     const isCorrect = guessedWord.toLowerCase() === originalWord.toLowerCase();
     setFeedback(isCorrect ? "correct" : "incorrect");
+    setTotalAttempts(prev => prev + 1);
     
     if (isCorrect) {
       setGuesses(prev => [...prev, { word: originalWord, description: currentWord.description }]);
+      setCorrectAnswers(prev => prev + 1);
     }
     
     setTimeout(() => {
@@ -480,8 +472,9 @@ export const WordGame: React.FC<WordGameProps> = ({ level, onComplete, onTimeUp 
     setHintsUsed(0);
     setRevealedPositions(new Set());
     setShowCompletionScreen(false);
-    setCountdown(3);
     setGuesses([]);
+    setCorrectAnswers(0);
+    setTotalAttempts(0);
     
     const wordPuzzle = generateWordPuzzle(level.themeId, level.difficultyId);
     setPuzzle(wordPuzzle);
@@ -502,42 +495,48 @@ export const WordGame: React.FC<WordGameProps> = ({ level, onComplete, onTimeUp 
   }
 
   if (showCompletionScreen) {
+    const incorrectAnswers = totalAttempts - correctAnswers;
+    const username = localStorage.getItem('currentPlayerName') || 'Играч';
+    
     return (
       <div className="flex flex-col items-center justify-center w-full max-w-4xl mx-auto py-12">
         <div className="bg-white rounded-lg shadow-xl p-8 text-center max-w-md w-full">
           <div className="mb-6">
             <Trophy className="w-16 h-16 text-yellow-500 mx-auto mb-4" />
-            <h2 className="text-3xl font-bold text-green-600 mb-2">Браво!</h2>
-            <p className="text-lg text-gray-700 mb-4">Завърши всички 10 думи!</p>
+            <h2 className="text-3xl font-bold text-green-600 mb-2">Браво, {username}!</h2>
+            <p className="text-lg text-gray-700 mb-4">Завърши всички {puzzle?.puzzles.length || 0} думи!</p>
             
             <div className="bg-gradient-to-r from-blue-50 to-green-50 p-4 rounded-lg mb-6">
-              <div className="text-sm text-gray-600 mb-2">Резултат:</div>
-              <div className="text-4xl font-bold text-blue-600">{guesses.length}/10</div>
-              <div className="text-sm text-gray-500 mt-1">Верни отговори</div>
-            </div>
-          </div>
-          
-          <div className="flex items-center justify-center gap-3 text-gray-600">
-            <Home className="w-5 h-5" />
-            <span>Връщане към началото след {countdown} сек...</span>
-          </div>
-          
-          <div className="mt-4">
-            <div className="w-full bg-gray-200 rounded-full h-2">
-              <div 
-                className="bg-blue-500 h-2 rounded-full transition-all duration-1000"
-                style={{ width: `${((3 - countdown) / 3) * 100}%` }}
-              ></div>
+              <div className="grid grid-cols-2 gap-4 mb-3">
+                <div>
+                  <div className="text-sm text-gray-600">Време:</div>
+                  <div className="text-xl font-bold text-blue-600">{formatTime(timeLeft)}</div>
+                </div>
+                <div>
+                  <div className="text-sm text-gray-600">Резултат:</div>
+                  <div className="text-xl font-bold text-green-600">{correctAnswers}/{puzzle?.puzzles.length || 0}</div>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <div className="text-sm text-green-600">Верни:</div>
+                  <div className="text-lg font-bold text-green-600">{correctAnswers}</div>
+                </div>
+                <div>
+                  <div className="text-sm text-red-600">Грешни:</div>
+                  <div className="text-lg font-bold text-red-600">{incorrectAnswers}</div>
+                </div>
+              </div>
             </div>
           </div>
           
           <Button 
-            onClick={() => window.location.href = '/'} 
+            onClick={() => navigate('/')} 
             variant="outline" 
-            className="mt-4 w-full"
+            className="w-full"
           >
             <Home className="w-4 h-4 mr-2" />
-            Към началото сега
+            Към началото
           </Button>
         </div>
       </div>
@@ -597,7 +596,7 @@ export const WordGame: React.FC<WordGameProps> = ({ level, onComplete, onTimeUp 
       <div className="flex justify-between w-full mb-4">
         <div className="flex gap-4">
           <div className="bg-primary/10 px-3 py-1.5 rounded-md text-sm">
-              Време: {hasStarted ? formatTime(timeLeft) : formatTime(timeLeft) + " (чакам първо движение)"}
+              Време: {hasStarted ? formatTime(timeLeft) : "00:00 (чакам първо движение)"}
           </div>
           <div className="bg-primary/10 px-3 py-1.5 rounded-md text-sm">
             Дума: {wordIndex + 1}/{puzzle.puzzles.length}
@@ -607,6 +606,26 @@ export const WordGame: React.FC<WordGameProps> = ({ level, onComplete, onTimeUp 
           </div>
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={async () => {
+            // Submit stats when completing game
+            if (gameStatsService.isSinglePlayerMode()) {
+              try {
+                await gameStatsService.submitWordGameStats({
+                  correctAnswers,
+                  totalAttempts,
+                  timeElapsed: timeLeft,
+                });
+                console.log('Stats submitted via Complete Game button');
+              } catch (error) {
+                console.error('Failed to submit stats:', error);
+              }
+            }
+            
+            setShowCompletionScreen(true);
+          }} className="bg-green-100 hover:bg-green-200 border-green-300 text-green-700">
+            <Check className="w-4 h-4 mr-2" />
+            Завърши играта
+          </Button>
           <Button variant="outline" size="sm" onClick={handleSolve}>
             🧠 Реши
           </Button>

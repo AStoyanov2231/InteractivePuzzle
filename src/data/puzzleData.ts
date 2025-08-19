@@ -206,7 +206,7 @@ export const puzzleCategories: PuzzleCategory[] = [
     icon: "timer.png",
     backgroundColor: "#FEF3C7",
     themes: themes.speed,
-    difficulties: difficulties.filter(d => d.id === "easy"),
+    difficulties: difficulties.filter(d => d.id === "easy" || d.id === "hard"),
     levels: [
       { id: 1 },
       { id: 2 },

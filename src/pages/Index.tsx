@@ -196,14 +196,14 @@ const Index = () => {
   }
 
   return (
-    <div className="h-screen bg-orange-200 py-4 px-6 flex flex-col overflow-hidden relative">
+    <div className="min-h-screen bg-orange-200 py-4 px-6 flex flex-col relative">
       {/* Fullscreen button in top right corner */}
       <FullscreenButton className="fixed top-4 right-4 z-50" />
       
       <Header />
       <Toaster />
       
-      <main className="flex-1 flex flex-row items-stretch justify-center mt-4 w-full px-4 gap-6">
+      <main className="flex-1 flex flex-row items-start justify-center mt-4 w-full px-4 gap-6">
         {/* Team Control Panel */}
         <div className="flex flex-col w-80 space-y-4 h-full">
           <Card className="bg-white/20 backdrop-blur-xl border border-white/30 shadow-2xl shadow-black/10 flex-1 rounded-3xl overflow-hidden">
@@ -321,9 +321,10 @@ const Index = () => {
         </div>
 
         {/* Main Content Area */}
-        <div className="flex-1 flex flex-col justify-center px-8">
-          <div className="w-full max-w-5xl mx-auto">
-            <div className="grid grid-cols-3 grid-rows-2 gap-8 min-h-[140px]">
+        <div className="flex-1 flex flex-col px-8">
+          <div className="w-full max-w-6xl mx-auto">
+            <div className="py-4">
+              <div className="grid grid-cols-3 gap-6 min-h-[120px]">
               {displayedCategories.map((category) => {
                 const isDisabled = !canPlayIndividualGames;
                 
@@ -341,16 +342,63 @@ const Index = () => {
                   />
                 );
               })}
-            </div>
-            
-            {/* Show message when individual games are disabled */}
-            {!canPlayIndividualGames && (
-              <div className="mt-6 text-center">
-                <p className="text-orange-700 text-sm font-medium bg-orange-100/60 backdrop-blur-sm border border-orange-200/50 rounded-xl px-4 py-3 inline-block shadow-sm">
-                  Индивидуалните игри са недостъпни когато има създадени отбори. Използвайте състезателния режим или премахнете отборите.
-                </p>
+              
+              {/* 3 Additional Image Placeholder Containers */}
+              {[
+                { id: 1, icon: "brain.png", backgroundColor: "#E0F2FE" },
+                { id: 2, icon: "calculator.png", backgroundColor: "#FCE7F3" },
+                { id: 3, icon: "puzzle.png", backgroundColor: "#F0FDF4" }
+              ].map((item) => {
+                const imageUrl = `https://astoyanov2231.github.io/InteractivePuzzle-Assets/images/categories/${item.icon}`;
+                
+                return (
+                  <div
+                    key={`placeholder-${item.id}`}
+                    className="puzzle-card shadow-lg rounded-2xl h-96 w-30 overflow-hidden touch-manipulation transition-all duration-200 ease-in-out hover:shadow-xl hover:transform hover:-translate-y-1 cursor-pointer active:opacity-90 active:scale-98"
+                    onClick={() => {
+                      // Placeholder click handler - you can add custom URLs here later
+                      console.log(`Placeholder container ${item.id} clicked`);
+                    }}
+                    style={{ backgroundColor: item.backgroundColor }}
+                  >
+                    <img 
+                      src={imageUrl}
+                      alt={`Placeholder ${item.id}`}
+                      className="w-full h-full object-cover"
+                      loading="eager"
+                      onError={(e) => {
+                        // Fallback to gray placeholder if image fails to load
+                        const target = e.target as HTMLImageElement;
+                        target.style.display = 'none';
+                        const parent = target.parentElement;
+                        if (parent) {
+                          parent.innerHTML = `
+                            <div class="w-full h-full bg-gray-200 flex items-center justify-center">
+                              <div class="text-center">
+                                <div class="w-16 h-16 bg-gray-300 rounded-2xl flex items-center justify-center mx-auto mb-4 opacity-50">
+                                  <span class="text-gray-500 text-sm font-medium">IMG</span>
+                                </div>
+                                <p class="text-gray-500 text-sm opacity-75">Image placeholder ${item.id}</p>
+                              </div>
+                            </div>
+                          `;
+                        }
+                      }}
+                    />
+                  </div>
+                                 );
+               })}
               </div>
-            )}
+              
+              {/* Show message when individual games are disabled */}
+              {!canPlayIndividualGames && (
+                <div className="mt-6 text-center">
+                  <p className="text-orange-700 text-sm font-medium bg-orange-100/60 backdrop-blur-sm border border-orange-200/50 rounded-xl px-4 py-3 inline-block shadow-sm">
+                    Индивидуалните игри са недостъпни когато има създадени отбори. Използвайте състезателния режим или премахнете отборите.
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </main>

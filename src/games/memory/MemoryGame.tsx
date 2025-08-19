@@ -54,8 +54,7 @@ export const MemoryGame: React.FC<MemoryGameProps> = ({
   
   // Use the game timer hook
   const { timeLeft, hasStarted, showTimeUpScreen, startTimer, resetTimer } = useGameTimer({
-    initialTime: level.timeLimit,
-    onTimeUp
+    enabled: true
   });
   
   // Initialize the game immediately on component mount
@@ -145,6 +144,7 @@ export const MemoryGame: React.FC<MemoryGameProps> = ({
           moves={moves}
           maxMoves={level.moves}
           onReset={handleResetGame}
+          onComplete={onComplete}
           formatTime={formatTime}
           hasStarted={hasStarted}
         />
