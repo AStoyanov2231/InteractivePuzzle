@@ -51,8 +51,7 @@ export function PlayerForm({ onAddPlayer, generateDummyNames, playerCount }: Pla
           <UserPlus className="w-5 h-5 text-white" />
         </div>
         <div>
-          <h3 className="text-lg font-semibold text-gray-800">Добави играчи</h3>
-          <p className="text-sm text-gray-600">Въведете имената на играчите ({playerCount}/16)</p>
+          <h3 className="text-lg font-semibold text-gray-800">Добави играчи ({playerCount}/16)</h3>
         </div>
       </div>
       
@@ -65,7 +64,7 @@ export function PlayerForm({ onAddPlayer, generateDummyNames, playerCount }: Pla
               <FormItem className="flex-1">
                 <FormControl>
                   <Input 
-                    placeholder="Въведете име на играч..." 
+                    placeholder="Въведете име..." 
                     {...field}
                     className="bg-white/95 border-white/70 focus:border-purple-300 focus:ring-purple-200 rounded-xl"
                   />

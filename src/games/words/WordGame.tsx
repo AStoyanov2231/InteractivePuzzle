@@ -68,13 +68,16 @@ const guaranteedScramble = (word: string): string => {
   return scrambled;
 };
 
-const generateWordPuzzle = (themeId: string, difficultyId: string) => {
+const generateWordPuzzle = (themeId: string) => {
   const themeBanks = wordBanks[themeId] || wordBanks.sport;
-  const difficultyKey = difficultyId === "easy" ? "easy" : difficultyId === "medium" ? "medium" : "hard";
-  const wordBank = themeBanks[difficultyKey];
+  const wordBank = [
+    ...(themeBanks.easy || []),
+    ...(themeBanks.medium || []),
+    ...(themeBanks.hard || [])
+  ];
 
   const shuffledWords = [...wordBank].sort(() => Math.random() - 0.5);
-  const numWords = 10;
+  const numWords = 15;
   const selectedWords = shuffledWords.slice(0, numWords);
 
   const scrambledWords = selectedWords.map(wordObj => {
@@ -105,6 +108,32 @@ const generateWordPuzzle = (themeId: string, difficultyId: string) => {
   };
 };
 
+// Chronometer-style timer display
+const Chronometer: React.FC<{ label?: string; seconds: number; hasStarted: boolean }>
+  = ({ label = "", seconds, hasStarted }) => {
+  const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
+  const secs = (seconds % 60).toString().padStart(2, '0');
+  return (
+    <div className="w-full" data-testid="chronometer">
+      <div className="text-center text-sm text-gray-600 mb-2">{label}</div>
+      <div className="relative mx-auto w-36 h-36">
+        <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-12 h-6 bg-gray-300 rounded-t-xl shadow" />
+        <div className="absolute inset-0 rounded-full bg-gradient-to-b from-slate-50 to-slate-200 border-4 border-slate-300 shadow-xl" />
+        <div className="absolute inset-2 rounded-full bg-white shadow-inner" />
+                  <div className="absolute inset-0 flex items-center justify-center">
+          <div className="text-2xl font-bold tabular-nums tracking-wider">
+            {hasStarted ? `${mins}:${secs}` : "00:00"}
+          </div>
+        </div>
+        <div className="absolute top-3 left-1/2 -translate-x-1/2 w-1 h-3 bg-slate-400 rounded" />
+        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 w-1 h-3 bg-slate-400 rounded" />
+        <div className="absolute top-1/2 -translate-y-1/2 left-3 w-3 h-1 bg-slate-400 rounded" />
+        <div className="absolute top-1/2 -translate-y-1/2 right-3 w-3 h-1 bg-slate-400 rounded" />
+      </div>
+    </div>
+  );
+};
+
 export const WordGame: React.FC<WordGameProps> = ({ level, onComplete, onTimeUp }) => {
   const navigate = useNavigate();
   const [puzzle, setPuzzle] = useState<{ 
@@ -133,15 +162,15 @@ export const WordGame: React.FC<WordGameProps> = ({ level, onComplete, onTimeUp 
   const gameContainerRef = useRef<HTMLDivElement>(null);
   const dropZoneRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
   
-  const { timeLeft, hasStarted, showTimeUpScreen, startTimer, resetTimer } = useGameTimer({
+  const { timeLeft, hasStarted, showTimeUpScreen, startTimer, stopTimer, resetTimer } = useGameTimer({
     enabled: true
   });
   
   // Initialize the game
   useEffect(() => {
-    const wordPuzzle = generateWordPuzzle(level.themeId, level.difficultyId);
+    const wordPuzzle = generateWordPuzzle(level.themeId);
     setPuzzle(wordPuzzle);
-  }, [level.themeId, level.difficultyId]);
+  }, [level.themeId]);
 
   // Set up drag items when word changes
   useEffect(() => {
@@ -175,9 +204,10 @@ export const WordGame: React.FC<WordGameProps> = ({ level, onComplete, onTimeUp 
   // Check game completion
   useEffect(() => {
     if (puzzle && wordIndex >= puzzle.puzzles.length && !showCompletionScreen) {
+      stopTimer();
       setShowCompletionScreen(true);
     }
-  }, [wordIndex, puzzle, showCompletionScreen]);
+  }, [wordIndex, puzzle, showCompletionScreen, stopTimer]);
 
   const handleDragStart = (e: React.DragEvent, itemId: string) => {
     setDraggedItem(itemId);
@@ -476,7 +506,7 @@ export const WordGame: React.FC<WordGameProps> = ({ level, onComplete, onTimeUp 
     setCorrectAnswers(0);
     setTotalAttempts(0);
     
-    const wordPuzzle = generateWordPuzzle(level.themeId, level.difficultyId);
+    const wordPuzzle = generateWordPuzzle(level.themeId);
     setPuzzle(wordPuzzle);
   };
 
@@ -488,7 +518,7 @@ export const WordGame: React.FC<WordGameProps> = ({ level, onComplete, onTimeUp 
 
   if (!puzzle) {
     return (
-      <div className="flex flex-col items-center justify-center py-12">
+      <div className="flex flex-col items-center justify-center py-12" data-testid="loading-screen">
         <h2 className="text-xl font-medium">Зареждане на играта...</h2>
       </div>
     );
@@ -499,7 +529,7 @@ export const WordGame: React.FC<WordGameProps> = ({ level, onComplete, onTimeUp 
     const username = localStorage.getItem('currentPlayerName') || 'Играч';
     
     return (
-      <div className="flex flex-col items-center justify-center w-full max-w-4xl mx-auto py-12">
+      <div className="flex flex-col items-center justify-center w-full max-w-4xl mx-auto py-12" data-testid="completion-screen">
         <div className="bg-white rounded-lg shadow-xl p-8 text-center max-w-md w-full">
           <div className="mb-6">
             <Trophy className="w-16 h-16 text-yellow-500 mx-auto mb-4" />
@@ -509,7 +539,7 @@ export const WordGame: React.FC<WordGameProps> = ({ level, onComplete, onTimeUp 
             <div className="bg-gradient-to-r from-blue-50 to-green-50 p-4 rounded-lg mb-6">
               <div className="grid grid-cols-2 gap-4 mb-3">
                 <div>
-                  <div className="text-sm text-gray-600">Време:</div>
+                  <div className="text- text-gray-600">Време:</div>
                   <div className="text-xl font-bold text-blue-600">{formatTime(timeLeft)}</div>
                 </div>
                 <div>
@@ -534,6 +564,7 @@ export const WordGame: React.FC<WordGameProps> = ({ level, onComplete, onTimeUp 
             onClick={() => navigate('/')} 
             variant="outline" 
             className="w-full"
+            data-testid="completion-home-button"
           >
             <Home className="w-4 h-4 mr-2" />
             Към началото
@@ -564,8 +595,9 @@ export const WordGame: React.FC<WordGameProps> = ({ level, onComplete, onTimeUp 
       
       <div 
         ref={gameContainerRef}
-        className="flex flex-col items-center w-full max-w-4xl mx-auto"
+        className="flex w-full gap-4 items-start -mx-4"
         style={{ touchAction: 'none' }}
+        data-testid="wordgame-container"
       >
         <style>{`
           .touch-drop-zone.touch-hover {
@@ -593,52 +625,79 @@ export const WordGame: React.FC<WordGameProps> = ({ level, onComplete, onTimeUp 
           }
         `}</style>
 
-      <div className="flex justify-between w-full mb-4">
-        <div className="flex gap-4">
-          <div className="bg-primary/10 px-3 py-1.5 rounded-md text-sm">
-              Време: {hasStarted ? formatTime(timeLeft) : "00:00 (чакам първо движение)"}
+        {/* LEFT SIDEBAR */}
+        <aside className="w-[220px] shrink-0 pl-4" data-testid="left-sidebar">
+          <div className="sticky top-6">
+          <div className="bg-white rounded-2xl shadow-md p-4 mb-4" data-testid="timer-card">
+            <Chronometer seconds={timeLeft} hasStarted={hasStarted} />
           </div>
-          <div className="bg-primary/10 px-3 py-1.5 rounded-md text-sm">
-            Дума: {wordIndex + 1}/{puzzle.puzzles.length}
+          <div className="bg-white rounded-2xl shadow-md p-6 mb-4" data-testid="stats-card">
+            <div className="space-y-4 text-lg">
+              <div className="flex items-center justify-between">
+                <span className="text-gray-600">Дума</span>
+                <span className="font-semibold" data-testid="word-count">{wordIndex + 1}/{puzzle.puzzles.length}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-gray-600">Подсказки</span>
+                <span className="font-semibold" data-testid="hint-count">{revealedPositions.size}/{originalWord.replace(/ /g, '').length}</span>
+              </div>
+            </div>
           </div>
-          <div className="bg-primary/10 px-3 py-1.5 rounded-md text-sm">
-            Подсказки: {hintsUsed}
+          <div className="bg-white rounded-2xl shadow-md p-3 space-y-2" data-testid="controls">
+            <Button 
+              variant="outline" 
+              onClick={handleHint}
+              disabled={revealedPositions.size >= wordLength}
+              className="w-full flex items-center gap-2"
+              data-testid="hint-button"
+            >
+              <Lightbulb className="w-4 h-4" />
+              Подсказка
+            </Button>
+            {allPositionsFilled && feedback === null && (
+              <Button onClick={checkAnswer} className="w-full flex items-center gap-2" data-testid="check-button">
+                <Check className="w-4 h-4" />
+                Провери
+              </Button>
+            )}
+            <Button variant="outline" onClick={handleSolve} className="w-full" data-testid="solve-button">🧠 Реши</Button>
+            <Button variant="outline" onClick={handleResetGame} className="w-full" data-testid="reset-button">
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Започни отначало
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={async () => {
+                stopTimer();
+                if (gameStatsService.isSinglePlayerMode()) {
+                  try {
+                    await gameStatsService.submitWordGameStats({
+                      correctAnswers,
+                      totalAttempts,
+                      timeElapsed: timeLeft,
+                    });
+                    console.log('Stats submitted via Complete Game button');
+                  } catch (error) {
+                    console.error('Failed to submit stats:', error);
+                  }
+                }
+                setShowCompletionScreen(true);
+              }}
+              className="w-full bg-green-100 hover:bg-green-200 border-green-300 text-green-700"
+              data-testid="finish-button"
+            >
+              <Check className="w-4 h-4 mr-2" />
+              Завърши играта
+            </Button>
           </div>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={async () => {
-            // Submit stats when completing game
-            if (gameStatsService.isSinglePlayerMode()) {
-              try {
-                await gameStatsService.submitWordGameStats({
-                  correctAnswers,
-                  totalAttempts,
-                  timeElapsed: timeLeft,
-                });
-                console.log('Stats submitted via Complete Game button');
-              } catch (error) {
-                console.error('Failed to submit stats:', error);
-              }
-            }
-            
-            setShowCompletionScreen(true);
-          }} className="bg-green-100 hover:bg-green-200 border-green-300 text-green-700">
-            <Check className="w-4 h-4 mr-2" />
-            Завърши играта
-          </Button>
-          <Button variant="outline" size="sm" onClick={handleSolve}>
-            🧠 Реши
-          </Button>
-          <Button variant="outline" size="sm" onClick={handleResetGame}>
-            <RefreshCw className="w-4 h-4 mr-2" />
-            Започни отначало
-          </Button>
-        </div>
-      </div>
+          </div>
+        </aside>
 
+        {/* MAIN AREA */}
+        <div className="flex-1 flex flex-col items-center">
         {/* Scrambled Letters */}
-        <div className="bg-white rounded-lg shadow-md p-6 w-full max-w-2xl mb-6">
-        <div className="text-center mb-6">
+        <div className="bg-white rounded-lg shadow-md p-6 w-full mb-6" data-testid="scrambled-card">
+        <div className="text-center mb-6" data-testid="scrambled-header">
             <p className="text-gray-500 mb-4">
               Разбъркани букви:
               {originalWord.includes(' ') && (
@@ -647,7 +706,7 @@ export const WordGame: React.FC<WordGameProps> = ({ level, onComplete, onTimeUp 
               </span>
             )}
           </p>
-            <div className="flex flex-wrap justify-center gap-3 mb-6">
+            <div className="flex flex-wrap justify-center gap-3 mb-6" data-testid="drag-items">
               {dragItems.map((item) => (
                 <div
                   key={item.id}
@@ -664,6 +723,8 @@ export const WordGame: React.FC<WordGameProps> = ({ level, onComplete, onTimeUp 
                       : "bg-white border-gray-300 cursor-move hover:bg-gray-50 active:scale-105"
                   }`}
                   style={{ touchAction: 'none' }}
+                  data-testid="drag-item"
+                  data-letter={item.value}
                 >
                   {item.value.toUpperCase()}
                 </div>
@@ -672,7 +733,7 @@ export const WordGame: React.FC<WordGameProps> = ({ level, onComplete, onTimeUp 
           </div>
           
           {/* Word Assembly Area */}
-          <div className="text-center mb-6">
+          <div className="text-center mb-6" data-testid="assembly-area">
             <p className="text-gray-500 mb-4">Съставете думата:</p>
             <div className="flex flex-wrap justify-center gap-2 min-h-[4rem] items-center">
               {Array.from({ length: originalWord.length }, (_, i) => {
@@ -694,7 +755,8 @@ export const WordGame: React.FC<WordGameProps> = ({ level, onComplete, onTimeUp 
                     key={`drop_${position}`}
                     ref={(el) => { dropZoneRefs.current[position] = el; }}
                     data-drop-zone={position}
-                    className={`w-14 h-14 flex items-center justify-center border-2 border-dashed rounded-lg transition-all touch-drop-zone ${
+                    data-testid="drop-zone"
+                    className={`relative w-14 h-14 flex items-center justify-center border-2 border-dashed rounded-lg transition-all touch-drop-zone ${
                       droppedValue 
                         ? feedback === "correct" 
                           ? "bg-green-100 border-green-400" 
@@ -710,46 +772,27 @@ export const WordGame: React.FC<WordGameProps> = ({ level, onComplete, onTimeUp 
                     onClick={() => droppedValue && feedback === null && !isRevealed && handleRemoveItem(position)}
                   >
                     {droppedValue && (
-                      <div className="relative flex items-center justify-center">
+                      <>
                         <span className="text-2xl font-bold">{droppedValue.toUpperCase()}</span>
                         {feedback === null && !isRevealed && (
-                          <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full flex items-center justify-center text-xs font-bold opacity-70 hover:opacity-100 transition-opacity">
+                          <div className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center text-xs font-bold opacity-70 hover:opacity-100 transition-opacity cursor-pointer">
                             ×
-              </div>
+                          </div>
                         )}
-            </div>
-          )}
-        </div>
+                      </>
+                    )}
+                  </div>
                 );
               })}
             </div>
         </div>
-        
-          {/* Action Buttons */}
-          <div className="flex justify-center gap-4 mb-4">
-          <Button 
-            variant="outline" 
-            onClick={handleHint}
-              disabled={revealedPositions.size >= wordLength}
-            className="flex items-center gap-2"
-          >
-            <Lightbulb className="w-4 h-4" />
-              Подсказка ({revealedPositions.size}/{wordLength})
-            </Button>
-            
-            {allPositionsFilled && feedback === null && (
-              <Button onClick={checkAnswer} className="flex items-center gap-2">
-                <Check className="w-4 h-4" />
-                Провери
-          </Button>
-            )}
         </div>
 
           {/* Feedback */}
         {feedback && (
             <div className={`p-3 rounded-md text-white text-center ${
             feedback === "correct" ? "bg-green-500" : "bg-red-500"
-          }`}>
+          }`} data-testid="feedback">
             {feedback === "correct" ? (
                 <div className="flex items-center justify-center">
                 <Check className="w-5 h-5 mr-2" />
@@ -762,24 +805,26 @@ export const WordGame: React.FC<WordGameProps> = ({ level, onComplete, onTimeUp 
         )}
       </div>
 
-        {/* Progress */}
-      <div className="w-full">
-        <h3 className="text-lg font-medium mb-4">Познати думи: {guesses.length}</h3>
-        <div className="grid gap-3 max-h-60 overflow-y-auto">
-          {guesses.map(({ word, description }, index) => (
-            <div key={index} className="bg-green-50 border border-green-200 rounded-lg p-4 shadow-sm">
-              <div className="flex items-start gap-3">
-                <div className="bg-green-500 text-white px-3 py-1 rounded-full text-sm font-medium min-w-fit">
-                  {word}
-                </div>
-                <div className="text-gray-700 text-sm leading-relaxed flex-1">
-                  {description || "Няма налично описание"}
+        {/* Right: Known words */}
+      <aside className="w-[320px] shrink-0 pr-4" data-testid="known-words-sidebar">
+        <div className="sticky top-6">
+          <h3 className="text-lg font-medium mb-4">Познати думи: <span data-testid="guesses-count">{guesses.length}</span></h3>
+          <div className="grid gap-3 max-h-[70vh] overflow-y-auto pr-1" data-testid="known-words-list">
+            {guesses.map(({ word, description }, index) => (
+              <div key={index} className="bg-green-50 border border-green-200 rounded-lg p-4 shadow-sm" data-testid="known-word-item">
+                <div className="flex items-start gap-3">
+                  <div className="bg-green-500 text-white px-3 py-1 rounded-full text-sm font-medium min-w-fit">
+                    {word}
+                  </div>
+                  <div className="text-gray-700 text-sm leading-relaxed flex-1">
+                    {description || "Няма налично описание"}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      </div>
+      </aside>
     </div>
     </>
   );

@@ -57,7 +57,6 @@ const MathSelection = ({ category, onClose }: MathSelectionProps) => {
 const WordsSelection = ({ category, onClose }: MathSelectionProps) => {
   const navigate = useNavigate();
   const [selectedTheme, setSelectedTheme] = useState<Theme | null>(category.themes[0] || null);
-  const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty | null>(category.difficulties[0] || null);
   const [isClosing, setIsClosing] = useState(false);
 
   const handleClose = () => {
@@ -68,16 +67,16 @@ const WordsSelection = ({ category, onClose }: MathSelectionProps) => {
   };
 
   const handleStartGame = () => {
-    if (selectedTheme && selectedDifficulty) {
+    if (selectedTheme) {
       const gameLevel: GameLevel = {
         id: 1,
         themeId: selectedTheme.id,
-        difficultyId: selectedDifficulty.id,
+        difficultyId: "all",
         isLocked: false,
         title: "Словесна игра",
-        description: `${selectedTheme.name} - ${selectedDifficulty.name}`,
-        timeLimit: selectedDifficulty.id === "easy" ? 180 : selectedDifficulty.id === "medium" ? 240 : 300, // 3-5 minutes based on difficulty
-        moves: 10,
+        description: `${selectedTheme.name}`,
+        timeLimit: 300,
+        moves: 15,
         grid: "words"
       };
 
@@ -98,11 +97,7 @@ const WordsSelection = ({ category, onClose }: MathSelectionProps) => {
             onSelectTheme={setSelectedTheme} 
           />
 
-          <DifficultySelector 
-            difficulties={category.difficulties}
-            selectedDifficulty={selectedDifficulty}
-            onSelectDifficulty={setSelectedDifficulty}
-          />
+          {/* Difficulty is not used for words anymore */}
 
           {/* Start Button instead of Level Selector */}
           <div className="space-y-4">
@@ -117,19 +112,13 @@ const WordsSelection = ({ category, onClose }: MathSelectionProps) => {
               <div className="text-center">
                 <Button 
                   onClick={handleStartGame}
-                  disabled={!selectedTheme || !selectedDifficulty}
+                  disabled={!selectedTheme}
                   size="lg"
                   className="w-full max-w-md bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-semibold py-4 px-8 rounded-xl shadow-lg"
                 >
                   <Play className="w-6 h-6 mr-3" />
-                  Започни игра с 10 думи
+                  Започни игра с 15 думи
                 </Button>
-                
-                {selectedTheme && selectedDifficulty && (
-                  <p className="text-sm text-gray-600 mt-3">
-                    Тема: {selectedTheme.name} • Трудност: {selectedDifficulty.name}
-                  </p>
-                )}
               </div>
             </div>
           </div>

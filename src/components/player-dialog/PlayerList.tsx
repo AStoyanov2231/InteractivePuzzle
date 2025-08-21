@@ -71,14 +71,6 @@ export function PlayerList({ players, onRemovePlayer, onCreateTeams, generateDum
               ))}
             </div>
           </ScrollArea>
-          
-          {players.length < 16 && (
-            <div className="mt-4 p-3 bg-blue-50/80 rounded-lg border border-blue-200/50">
-              <p className="text-blue-700 text-sm font-medium">
-                💡 Можете да добавите още {16 - players.length} играча
-              </p>
-            </div>
-          )}
         </div>
       )}
     </div>

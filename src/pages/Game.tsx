@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { puzzleCategories } from "@/data/puzzleData";
 import { GameManager } from "@/games/GameManager";
 import { FullscreenButton } from "@/components/FullscreenButton";
+import { RequireNameToggle } from "@/components/RequireNameToggle";
 import { UsernameDialog } from "@/components/UsernameDialog";
 import { GameLevel } from "@/types";
 
@@ -20,6 +21,10 @@ const Game = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [showUsernameDialog, setShowUsernameDialog] = useState(true);
   const [username, setUsername] = useState<string>("");
+  const [requireUsername, setRequireUsername] = useState<boolean>(() => {
+    const stored = localStorage.getItem('requireUsernameForSolo');
+    return stored === null ? true : stored === 'true';
+  });
 
   useEffect(() => {
     if (categoryId && numericLevelId) {
@@ -114,8 +119,8 @@ const Game = () => {
 
   const { level, category } = gameData;
 
-  // Show username dialog if no username is set
-  if (showUsernameDialog || !username) {
+  // Show username dialog if required and not provided
+  if ((requireUsername && (showUsernameDialog || !username))) {
     return (
       <>
         <div className="min-h-screen bg-gradient-to-br from-orange-400 via-orange-200 to-orange-200 flex items-center justify-center">
@@ -135,8 +140,11 @@ const Game = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-400 via-orange-200 to-orange-200 p-4 relative overflow-hidden">
-      {/* Fullscreen button in top right corner */}
-      <FullscreenButton className="fixed top-4 right-4 z-50" />
+      {/* Controls in top right corner */}
+      <div className="fixed top-4 right-4 z-50 flex items-center gap-2">
+        <RequireNameToggle />
+        <FullscreenButton />
+      </div>
       
       {/* Game Header - Fixed height for single viewport */}
       <div className="flex justify-between items-center mb-4 h-16">
@@ -153,13 +161,10 @@ const Game = () => {
             <h1 className="text-lg font-bold text-gray-800">{category?.name}</h1>
           </div>
         </div>
-        <div className="bg-white/60 backdrop-blur-sm px-4 py-2 rounded-xl shadow-sm border border-white/20">
-          <span className="text-sm font-medium text-gray-700">Играч: {username}</span>
-        </div>
       </div>
 
       {/* Game Content Container - Calculated height for single viewport */}
-      <div className="bg-white/40 backdrop-blur-sm rounded-3xl shadow-xl border border-white/30 p-6 overflow-hidden" 
+      <div className="bg-white/40 backdrop-blur-sm rounded-3xl shadow-xl border border-white/30 overflow-hidden" 
            style={{ height: 'calc(100vh - 7rem)' }}>
         <div className="h-full flex flex-col">
           {/* Game Container - Independent scrollable area if needed */}

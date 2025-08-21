@@ -1,17 +1,17 @@
 import { useState, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { PuzzleCard } from "@/components/PuzzleCard";
 import { PuzzleDetails } from "@/components/PuzzleDetails";
-import { CompetitiveDetails } from "@/components/CompetitiveDetails";
 import { PuzzleCategory } from "@/types";
 import { puzzleCategories } from "@/data/puzzleData";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, ArrowLeft, Trophy, Play, Settings, X } from "lucide-react";
+import { Users, ArrowLeft, Trophy, Settings } from "lucide-react";
 import { PlayerDialog } from "@/components/PlayerDialog";
 import { Toaster } from "@/components/ui/toaster";
 import { FullscreenButton } from "@/components/FullscreenButton";
+import { RequireNameToggle } from "@/components/RequireNameToggle";
 import { useToast } from "@/hooks/use-toast";
 
 interface Team {
@@ -27,10 +27,10 @@ const Index = () => {
   const [showPlayerDialog, setShowPlayerDialog] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
   const [isCompetitiveGameActive, setIsCompetitiveGameActive] = useState(false);
-  const [showCompetitiveDetails, setShowCompetitiveDetails] = useState(false);
   const [teams, setTeams] = useState<Team[]>([]);
   const [dialogInitialTab, setDialogInitialTab] = useState<"players" | "teams">("players");
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   // Check if competitive game is active and load teams on component mount
   useEffect(() => {
@@ -47,15 +47,13 @@ const Index = () => {
     }
   }, [showPlayerDialog]);
 
-  // Handle URL parameters for category selection
+  // Handle URL parameters for category selection (ignore competitive picker)
   useEffect(() => {
     const categoryParam = searchParams.get('category');
     if (categoryParam) {
       const category = puzzleCategories.find(cat => cat.id === categoryParam);
       if (category) {
-        if (category.id === "competitive" && isCompetitiveGameActive) {
-          setShowCompetitiveDetails(true);
-        } else {
+        if (category.id !== "competitive") {
           setSelectedCategory(category);
           setShowDetails(true);
         }
@@ -64,26 +62,38 @@ const Index = () => {
     }
   }, [searchParams, isCompetitiveGameActive]);
 
+  // Multiplayer supported categories
+  const multiplayerCategories = new Set(["memory", "math", "words", "quiz"]);
+
   const handleCategoryClick = (category: PuzzleCategory) => {
-    // If teams exist, individual games should not be playable
+    // If teams exist and game supports multiplayer, start competitive mode directly
     if (teams.length > 0) {
+      if (multiplayerCategories.has(category.id)) {
+        const validTeams = teams.filter(team => team.players.length > 0);
+        if (validTeams.length < 2) {
+          toast({
+            title: "Недостатъчно активни отбори",
+            description: "Нужни са поне 2 отбора с играчи, за да започнете мултиплейър.",
+            variant: "destructive"
+          });
+          return;
+        }
+        localStorage.setItem('currentGameCategory', category.id);
+        navigate(`/competitive-game/${category.id}`);
+        return;
+      }
       toast({
-        title: "Индивидуални игри недостъпни",
-        description: "Изчистете отборите за да играете индивидуални игри или използвайте състезателния режим.",
+        title: "Играта няма мултиплейър режим",
+        description: "Изберете игра с мултиплейър: Памет, Математика, Думи, Викторина.",
         variant: "destructive"
       });
       return;
     }
 
-    // If competitive game is active, only allow competitive category
-    if (isCompetitiveGameActive && category.id !== "competitive") {
-      return;
-    }
-
+    // Solo flow
     setSelectedCategory(category);
     setShowDetails(true);
     setIsClosing(false);
-    // Update URL to reflect selected category
     setSearchParams({ category: category.id });
   };
 
@@ -91,7 +101,6 @@ const Index = () => {
     setIsClosing(true);
     setTimeout(() => {
       setShowDetails(false);
-      setShowCompetitiveDetails(false);
       setSelectedCategory(null);
       setIsClosing(false);
       // Clear URL parameters
@@ -114,20 +123,7 @@ const Index = () => {
     });
   };
 
-  const handleGameStart = () => {
-    // When teams are created and game is started, 
-    // activate competitive mode and show competitive details
-    setIsCompetitiveGameActive(true);
-    setShowCompetitiveDetails(true);
-    setSearchParams({ category: 'competitive' });
-  };
-
-  const handleStartCompetitive = () => {
-    if (teams.length > 0) {
-      setShowCompetitiveDetails(true);
-      setSearchParams({ category: 'competitive' });
-    }
-  };
+  // Competitive picker flow removed
 
   const handleOpenTeamCreation = () => {
     setDialogInitialTab("players");
@@ -152,18 +148,16 @@ const Index = () => {
   const gameCategories = puzzleCategories.filter(cat => cat.id !== "competitive");
   const displayedCategories = gameCategories.filter(category => category.id !== "competitive");
   
-  // Check if we can start competitive games (need at least 2 teams with players)
-  const validTeams = teams.filter(team => team.players.length > 0);
-  const canStartCompetitive = validTeams.length >= 2;
-  
-  // Individual games are only available when no teams are created
-  const canPlayIndividualGames = teams.length === 0;
+  // Determine disabled state per category when teams exist
 
-  if ((showDetails && selectedCategory) || showCompetitiveDetails) {
+  if ((showDetails && selectedCategory)) {
     return (
       <div className={`fixed inset-0 bg-gradient-to-br from-orange-400 via-orange-200 to-orange-200 z-50 flex flex-col transition-all duration-300 ${isClosing ? 'animate-slide-out' : 'animate-slide-in'}`}>
-        {/* Fullscreen button in top right corner */}
-        <FullscreenButton className="fixed top-4 right-4 z-50" />
+        {/* Controls in top right corner */}
+        <div className="fixed top-4 right-4 z-50 flex items-center gap-2">
+          <RequireNameToggle />
+          <FullscreenButton />
+        </div>
         
         {/* Back button integrated into the orange panel with animation trigger */}
         <div className="p-6">
@@ -180,15 +174,11 @@ const Index = () => {
         
         <Toaster />
         <main className="flex-1 flex flex-col overflow-y-auto px-6 pb-6">
-          {showCompetitiveDetails ? (
-            <CompetitiveDetails onClose={handleCloseDetails} />
-          ) : (
-            selectedCategory && (
-              <PuzzleDetails
-                category={selectedCategory}
-                onClose={handleCloseDetails}
-              />
-            )
+          {selectedCategory && (
+            <PuzzleDetails
+              category={selectedCategory}
+              onClose={handleCloseDetails}
+            />
           )}
         </main>
       </div>
@@ -197,8 +187,11 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-orange-200 py-4 px-6 flex flex-col relative">
-      {/* Fullscreen button in top right corner */}
-      <FullscreenButton className="fixed top-4 right-4 z-50" />
+      {/* Controls in top right corner */}
+      <div className="fixed top-4 right-4 z-50 flex items-center gap-2">
+        <RequireNameToggle />
+        <FullscreenButton />
+      </div>
       
       <Header />
       <Toaster />
@@ -285,15 +278,6 @@ const Index = () => {
                   {/* Action Buttons */}
                   <div className="space-y-3 pt-4 border-t border-white/30">
                     <Button 
-                      onClick={handleStartCompetitive}
-                      disabled={!canStartCompetitive}
-                      className="flex items-center gap-3 w-full bg-gradient-to-r from-emerald-400 via-green-500 to-teal-500 text-white font-bold shadow-xl disabled:from-gray-400/60 disabled:to-gray-500/60 disabled:cursor-not-allowed backdrop-blur-sm border-2 border-white/30 rounded-2xl py-3 active:scale-95 transition-transform duration-150"
-                    >
-                      <Play size={18} className="drop-shadow-sm" />
-                      <span className="drop-shadow-sm">Започни състезание</span>
-                    </Button>
-                    
-                    <Button 
                       onClick={handleOpenTeamManagement}
                       className="flex items-center gap-2 w-full bg-white/30 backdrop-blur-sm border border-white/40 hover:bg-white/40 hover:border-white/50 text-gray-800 font-medium shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] rounded-xl"
                       variant="ghost"
@@ -326,8 +310,8 @@ const Index = () => {
             <div className="py-4">
               <div className="grid grid-cols-3 gap-6 min-h-[120px]">
               {displayedCategories.map((category) => {
-                const isDisabled = !canPlayIndividualGames;
-                
+                const isDisabled = teams.length > 0 && !multiplayerCategories.has(category.id);
+
                 return (
                   <PuzzleCard
                     key={category.id}
@@ -390,11 +374,11 @@ const Index = () => {
                })}
               </div>
               
-              {/* Show message when individual games are disabled */}
-              {!canPlayIndividualGames && (
+              {/* Show message when some games are disabled due to teams */}
+              {teams.length > 0 && (
                 <div className="mt-6 text-center">
                   <p className="text-orange-700 text-sm font-medium bg-orange-100/60 backdrop-blur-sm border border-orange-200/50 rounded-xl px-4 py-3 inline-block shadow-sm">
-                    Индивидуалните игри са недостъпни когато има създадени отбори. Използвайте състезателния режим или премахнете отборите.
+                    Част от игрите без мултиплейър са недостъпни при създадени отбори. Изберете игра с мултиплейър (Памет, Математика, Думи, Викторина) или премахнете отборите.
                   </p>
                 </div>
               )}
@@ -406,7 +390,6 @@ const Index = () => {
       <PlayerDialog 
         open={showPlayerDialog} 
         onOpenChange={setShowPlayerDialog}
-        onGameStart={handleGameStart} 
         initialTab={dialogInitialTab}
       />
     </div>

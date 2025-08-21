@@ -23,6 +23,32 @@ interface MathGameProps {
 
 
 
+// Chronometer-style timer display (matches WordGame)
+const Chronometer: React.FC<{ label?: string; seconds: number; hasStarted: boolean }>
+  = ({ label = "", seconds, hasStarted }) => {
+  const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
+  const secs = (seconds % 60).toString().padStart(2, '0');
+  return (
+    <div className="w-full">
+      <div className="text-center text-sm text-gray-600 mb-2">{label}</div>
+      <div className="relative mx-auto w-36 h-36">
+        <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-12 h-6 bg-gray-300 rounded-t-xl shadow" />
+        <div className="absolute inset-0 rounded-full bg-gradient-to-b from-slate-50 to-slate-200 border-4 border-slate-300 shadow-xl" />
+        <div className="absolute inset-2 rounded-full bg-white shadow-inner" />
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="text-2xl font-bold tabular-nums tracking-wider">
+            {hasStarted ? `${mins}:${secs}` : "00:00"}
+          </div>
+        </div>
+        <div className="absolute top-3 left-1/2 -translate-x-1/2 w-1 h-3 bg-slate-400 rounded" />
+        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 w-1 h-3 bg-slate-400 rounded" />
+        <div className="absolute top-1/2 -translate-y-1/2 left-3 w-3 h-1 bg-slate-400 rounded" />
+        <div className="absolute top-1/2 -translate-y-1/2 right-3 w-3 h-1 bg-slate-400 rounded" />
+      </div>
+    </div>
+  );
+};
+
 export const MathGame: React.FC<MathGameProps> = ({ level, onComplete, onTimeUp, currentTeam, onPlayerTurn }) => {
   const navigate = useNavigate();
   const [problems, setProblems] = useState<MathProblem[]>([]);
@@ -46,7 +72,7 @@ export const MathGame: React.FC<MathGameProps> = ({ level, onComplete, onTimeUp,
   const dropZoneRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
   
   // Use the game timer hook
-  const { timeLeft, hasStarted, showTimeUpScreen, startTimer, resetTimer } = useGameTimer({
+  const { timeLeft, hasStarted, showTimeUpScreen, startTimer, stopTimer, resetTimer } = useGameTimer({
     enabled: true
   });
   
@@ -327,7 +353,7 @@ export const MathGame: React.FC<MathGameProps> = ({ level, onComplete, onTimeUp,
             ref={(el) => { dropZoneRefs.current[blank.id] = el; }}
             data-drop-zone={blank.id}
             data-blank-type={blank.type}
-            className={`inline-flex items-center justify-center w-16 h-12 mx-1 border-2 border-dashed rounded-md transition-all touch-drop-zone align-middle ${
+            className={`relative inline-flex items-center justify-center w-16 h-12 mx-1 border-2 border-dashed rounded-md transition-all touch-drop-zone align-middle ${
               droppedValue 
                 ? feedback === "correct" 
                   ? "bg-green-100 border-green-400" 
@@ -351,14 +377,14 @@ export const MathGame: React.FC<MathGameProps> = ({ level, onComplete, onTimeUp,
             }}
           >
             {droppedValue && (
-              <div className="relative flex items-center justify-center">
+              <>
                 <span className="text-2xl font-semibold leading-none">{droppedValue}</span>
                 {feedback === null && (
-                  <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full flex items-center justify-center text-xs font-bold opacity-70 hover:opacity-100 transition-opacity">
+                  <div className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center text-xs font-bold opacity-70 hover:opacity-100 transition-opacity cursor-pointer">
                     ×
                   </div>
                 )}
-              </div>
+              </>
             )}
           </div>
         );
@@ -491,7 +517,7 @@ export const MathGame: React.FC<MathGameProps> = ({ level, onComplete, onTimeUp,
   return (
     <div 
       ref={gameContainerRef}
-      className="flex flex-col items-center w-full max-w-4xl mx-auto"
+      className="flex w-full gap-4 items-start -mx-4"
       style={{ touchAction: 'none' }}
     >
       <style>{`
@@ -526,54 +552,74 @@ export const MathGame: React.FC<MathGameProps> = ({ level, onComplete, onTimeUp,
         }
       `}</style>
 
-      <div className="flex justify-between w-full mb-4">
-        <div className="flex gap-4">
-          <div className="bg-primary/10 px-3 py-1.5 rounded-md text-sm">
-            Време: {formatTime(timeLeft)}
+      {/* LEFT SIDEBAR */}
+      <aside className="w-[220px] shrink-0 pl-4">
+        <div className="sticky top-6">
+          <div className="bg-white rounded-2xl shadow-md p-4 mb-4">
+            <Chronometer seconds={timeLeft} hasStarted={hasStarted} />
           </div>
-          <div className="bg-primary/10 px-3 py-1.5 rounded-md text-sm">
-            Задача: {currentProblemIndex + 1}/{problems.length}
-          </div>
-          {currentTeam && (
-            <div className="bg-blue-100 px-3 py-1.5 rounded-md text-sm font-medium">
-              🎯 {currentTeam.players[currentPlayerIndex]?.name || 'Играч'}
+          <div className="bg-white rounded-2xl shadow-md p-6 mb-4">
+            <div className="space-y-4 text-lg">
+              <div className="flex items-center justify-between">
+                <span className="text-gray-600">Задача</span>
+                <span className="font-semibold">{currentProblemIndex + 1}/{problems.length}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-gray-600">Верни</span>
+                <span className="font-semibold">{correctAnswers}</span>
+              </div>
+              {currentTeam && (
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-600">Играч</span>
+                  <span className="font-semibold">{currentTeam.players[currentPlayerIndex]?.name || 'Играч'}</span>
+                </div>
+              )}
             </div>
-          )}
-        </div>
-        <div className="flex gap-2">
-          {!currentTeam && (
-            <Button variant="outline" size="sm" onClick={async () => {
-              // Submit stats when completing game
-              if (gameStatsService.isSinglePlayerMode(currentTeam)) {
-                try {
-                  await gameStatsService.submitMathGameStats({
-                    correctAnswers,
-                    totalProblems: problems.length,
-                    timeElapsed: timeLeft,
-                  });
-                  console.log('Stats submitted via Complete Game button');
-                } catch (error) {
-                  console.error('Failed to submit stats:', error);
-                }
-              }
-              
-              setShowCompletionScreen(true);
-            }} className="bg-green-100 hover:bg-green-200 border-green-300 text-green-700">
-              <Check className="w-4 h-4 mr-2" />
-              Завърши играта
+          </div>
+          <div className="bg-white rounded-2xl shadow-md p-3 space-y-2">
+            {allBlanksSelected && feedback === null && (
+              <Button onClick={checkAnswer} className="w-full flex items-center gap-2">
+                <Check className="w-4 h-4" />
+                Провери
+              </Button>
+            )}
+            <Button variant="outline" onClick={handleSolve} className="w-full">🧠 Реши</Button>
+            <Button variant="outline" onClick={handleReset} className="w-full">
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Започни отначало
             </Button>
-          )}
-          <Button variant="outline" size="sm" onClick={handleSolve}>
-            🧠 Реши
-          </Button>
-          <Button variant="outline" size="sm" onClick={handleReset}>
-            <RefreshCw className="w-4 h-4 mr-2" />
-            Започни отначало
-          </Button>
+            {!currentTeam && (
+              <Button 
+                variant="outline"
+                onClick={async () => {
+                  stopTimer();
+                  if (gameStatsService.isSinglePlayerMode(currentTeam)) {
+                    try {
+                      await gameStatsService.submitMathGameStats({
+                        correctAnswers,
+                        totalProblems: problems.length,
+                        timeElapsed: timeLeft,
+                      });
+                      console.log('Stats submitted via Complete Game button');
+                    } catch (error) {
+                      console.error('Failed to submit stats:', error);
+                    }
+                  }
+                  setShowCompletionScreen(true);
+                }}
+                className="w-full bg-green-100 hover:bg-green-200 border-green-300 text-green-700"
+              >
+                <Check className="w-4 h-4 mr-2" />
+                Завърши играта
+              </Button>
+            )}
+          </div>
         </div>
-      </div>
+      </aside>
 
-      <div className="bg-white rounded-lg shadow-md p-8 w-full max-w-2xl mb-6">
+      {/* MAIN AREA */}
+      <div className="flex-1 flex flex-col items-center">
+      <div className="bg-white rounded-lg shadow-md p-8 w-full mb-6">
         <div className="text-3xl font-bold text-center mb-8 leading-relaxed flex items-center justify-center">
           {renderEquation(currentProblem.equation, currentProblem.blanks)}
         </div>
@@ -640,13 +686,7 @@ export const MathGame: React.FC<MathGameProps> = ({ level, onComplete, onTimeUp,
           </div>
         </div>
 
-        {allBlanksSelected && feedback === null && (
-          <div className="text-center">
-            <Button onClick={checkAnswer} size="lg" className="px-8 py-4 text-lg">
-              Провери отговора
-            </Button>
-          </div>
-        )}
+        {/* Check button now in the left sidebar */}
 
       {feedback && (
           <div className={`mt-6 p-4 rounded-md text-white text-center ${
@@ -665,6 +705,7 @@ export const MathGame: React.FC<MathGameProps> = ({ level, onComplete, onTimeUp,
           )}
         </div>
       )}
+    </div>
     </div>
     </div>
   );

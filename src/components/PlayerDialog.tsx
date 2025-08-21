@@ -322,17 +322,6 @@ export function PlayerDialog({ open, onOpenChange, onGameStart, initialTab = "pl
         <div className="bg-white/30 border-t border-white/50 p-6">
           <div className="flex justify-between items-center">
             <div className="text-sm text-gray-700 font-medium">
-              {teams.length > 0 ? (
-                <span className="flex items-center gap-2">
-                  <Trophy className="w-4 h-4" />
-                  {teams.length} отбора с {teams.reduce((acc, team) => acc + team.players.length, 0)} играча
-                </span>
-              ) : (
-                <span className="flex items-center gap-2">
-                  <Users className="w-4 h-4" />
-                  {players.length} играча добавени
-                </span>
-              )}
             </div>
             <div className="flex gap-3">
               <Button 

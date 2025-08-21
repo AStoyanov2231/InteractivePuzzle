@@ -8,6 +8,7 @@ import { MathGame } from "@/games/math/MathGame";
 import { WordGame } from "@/games/words/WordGame";
 import { QuizGame } from "@/games/quiz/QuizGame";
 import { FullscreenButton } from "@/components/FullscreenButton";
+import { RequireNameToggle } from "@/components/RequireNameToggle";
 import { useToast } from "@/hooks/use-toast";
 import { GameLevel } from "@/types";
 
@@ -335,7 +336,10 @@ const CompetitiveGame = () => {
     
     return (
       <div className="min-h-screen bg-gradient-to-br from-orange-400 via-orange-200 to-orange-200 py-6 px-6">
-        <FullscreenButton className="fixed top-4 right-4 z-50" />
+        <div className="fixed top-4 right-4 z-50 flex items-center gap-2">
+          <RequireNameToggle />
+          <FullscreenButton />
+        </div>
         
         <div className="max-w-4xl mx-auto">
           <div className="mb-6">
@@ -424,7 +428,10 @@ const CompetitiveGame = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-400 via-orange-200 to-orange-200 flex">
-      <FullscreenButton className="fixed top-4 right-4 z-50" />
+      <div className="fixed top-4 right-4 z-50 flex items-center gap-2">
+        <RequireNameToggle />
+        <FullscreenButton />
+      </div>
       
       {/* Left Sidebar - Team Progress */}
       <div className="w-80 bg-gradient-to-br from-orange-400 via-orange-200 to-orange-200 shadow-2xl">
