@@ -53,75 +53,165 @@ const MathSelection = ({ category, onClose }: MathSelectionProps) => {
   );
 };
 
+// Specialized Memory Selection Component
+const MemorySelection = ({ category, onClose }: MathSelectionProps) => {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    // Auto-start memory game with default settings
+    const gameLevel: GameLevel = {
+      id: 1,
+      themeId: "animals", // Default category
+      difficultyId: "medium", // Not used in new version
+      isLocked: false,
+      title: "Игра на паметта",
+      description: "4x4 картички с 3 рунда",
+      timeLimit: 600, // 10 minutes
+      moves: 999, // No limit
+      grid: "4×4"
+    };
+
+    // Navigate to game immediately
+    navigate(`/game/${category.id}/1`, { state: { customLevel: gameLevel } });
+  }, [category.id, navigate]);
+
+  return (
+    <div className="bg-gradient-to-br from-orange-400 via-orange-200 to-orange-200 rounded-3xl shadow-2xl overflow-hidden w-full h-full flex flex-col">
+      <div className="flex-1 flex items-center justify-center">
+        <div className="bg-white/60 backdrop-blur-sm p-8 rounded-3xl shadow-lg">
+          <div className="text-xl font-semibold text-gray-700">Стартиране на играта...</div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // Specialized Words Selection Component
 const WordsSelection = ({ category, onClose }: MathSelectionProps) => {
   const navigate = useNavigate();
-  const [selectedTheme, setSelectedTheme] = useState<Theme | null>(category.themes[0] || null);
-  const [isClosing, setIsClosing] = useState(false);
 
-  const handleClose = () => {
-    setIsClosing(true);
-    setTimeout(() => {
-      onClose();
-    }, 300);
-  };
+  useEffect(() => {
+    // Auto-start word game with category selection (like memory game)
+    const gameLevel: GameLevel = {
+      id: 1,
+      themeId: "sport", // Default category, will be overridden in game
+      difficultyId: "all",
+      isLocked: false,
+      title: "Словесна игра",
+      description: "Избери категория и реши думите",
+      timeLimit: 300,
+      moves: 15,
+      grid: "words"
+    };
 
-  const handleStartGame = () => {
-    if (selectedTheme) {
-      const gameLevel: GameLevel = {
-        id: 1,
-        themeId: selectedTheme.id,
-        difficultyId: "all",
-        isLocked: false,
-        title: "Словесна игра",
-        description: `${selectedTheme.name}`,
-        timeLimit: 300,
-        moves: 15,
-        grid: "words"
-      };
-
-      navigate(`/game/${category.id}/1`, { state: { customLevel: gameLevel } });
-    }
-  };
+    // Navigate to game immediately
+    navigate(`/game/${category.id}/1`, { state: { customLevel: gameLevel } });
+  }, [category.id, navigate]);
 
   return (
-    <div 
-      className={`bg-gradient-to-br from-orange-400 via-orange-200 to-orange-200 rounded-3xl shadow-2xl overflow-hidden w-full h-full flex flex-col transition-all duration-300 ${isClosing ? 'animate-slide-out' : 'animate-slide-in'}`}
-    >
-      <div className="flex-1 flex flex-col lg:flex-row p-6 sm:p-8 gap-6 sm:gap-8 overflow-y-auto">
-        <div className="flex flex-col space-y-6 lg:space-y-8 w-full">
-          
-          <ThemeSelector 
-            themes={category.themes} 
-            selectedTheme={selectedTheme} 
-            onSelectTheme={setSelectedTheme} 
-          />
+    <div className="bg-gradient-to-br from-orange-400 via-orange-200 to-orange-200 rounded-3xl shadow-2xl overflow-hidden w-full h-full flex flex-col">
+      <div className="flex-1 flex items-center justify-center">
+        <div className="bg-white/60 backdrop-blur-sm p-8 rounded-3xl shadow-lg">
+          <div className="text-xl font-semibold text-gray-700">Стартиране на играта...</div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
-          {/* Difficulty is not used for words anymore */}
+// Specialized Logic Selection Component (auto-start, no choices)
+const LogicSelection = ({ category, onClose }: MathSelectionProps) => {
+  const navigate = useNavigate();
 
-          {/* Start Button instead of Level Selector */}
-          <div className="space-y-4">
-            <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/30">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="bg-pink-500 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold text-lg">
-                  3
-                </div>
-                <h3 className="text-xl font-bold text-gray-800">Започни игра</h3>
-              </div>
-              
-              <div className="text-center">
-                <Button 
-                  onClick={handleStartGame}
-                  disabled={!selectedTheme}
-                  size="lg"
-                  className="w-full max-w-md bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-semibold py-4 px-8 rounded-xl shadow-lg"
-                >
-                  <Play className="w-6 h-6 mr-3" />
-                  Започни игра с 15 думи
-                </Button>
-              </div>
-            </div>
-          </div>
+  useEffect(() => {
+    // Auto-start logic game with default settings
+    const gameLevel: GameLevel = {
+      id: 1,
+      themeId: "patterns", // Default theme
+      difficultyId: "medium", // Default difficulty
+      isLocked: false,
+      title: "Логическа игра",
+      description: "Свържи еднакви елементи",
+      timeLimit: 300,
+      moves: 15,
+      grid: "logic"
+    };
+
+    // Navigate to game immediately
+    navigate(`/game/${category.id}/1`, { state: { customLevel: gameLevel } });
+  }, [category.id, navigate]);
+
+  return (
+    <div className="bg-gradient-to-br from-orange-400 via-orange-200 to-orange-200 rounded-3xl shadow-2xl overflow-hidden w-full h-full flex flex-col">
+      <div className="flex-1 flex items-center justify-center">
+        <div className="bg-white/60 backdrop-blur-sm p-8 rounded-3xl shadow-lg">
+          <div className="text-xl font-semibold text-gray-700">Стартиране на играта...</div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Specialized Quiz Selection Component (auto-start, no level/difficulty choices)
+const QuizSelection = ({ category, onClose }: MathSelectionProps) => {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    // Auto-start quiz game with default settings
+    const gameLevel: GameLevel = {
+      id: 1,
+      themeId: "history", // Default theme, will be overridden by category selection in game
+      difficultyId: "medium", // Not used in new version
+      isLocked: false,
+      title: "Викторина",
+      description: "Избери категория и отговори на въпросите",
+      timeLimit: 600, // 10 minutes
+      moves: 10, // 10 questions
+      grid: "quiz"
+    };
+
+    // Navigate to game immediately
+    navigate(`/game/${category.id}/1`, { state: { customLevel: gameLevel } });
+  }, [category.id, navigate]);
+
+  return (
+    <div className="bg-gradient-to-br from-orange-400 via-orange-200 to-orange-200 rounded-3xl shadow-2xl overflow-hidden w-full h-full flex flex-col">
+      <div className="flex-1 flex items-center justify-center">
+        <div className="bg-white/60 backdrop-blur-sm p-8 rounded-3xl shadow-lg">
+          <div className="text-xl font-semibold text-gray-700">Стартиране на викторината...</div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Specialized Speed Selection Component (auto-start, no choices)
+const SpeedSelection = ({ category, onClose }: MathSelectionProps) => {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    // Auto-start speed game with default settings
+    const gameLevel: GameLevel = {
+      id: 1,
+      themeId: "color-match", // Default theme
+      difficultyId: "easy", // Default difficulty, can be changed in game
+      isLocked: false,
+      title: "Скоростна игра",
+      description: "Съвпадение на цветове",
+      timeLimit: 300, // 5 minutes
+      moves: 50, // Max attempts
+      grid: "speed"
+    };
+
+    // Navigate to game immediately
+    navigate(`/game/${category.id}/1`, { state: { customLevel: gameLevel } });
+  }, [category.id, navigate]);
+
+  return (
+    <div className="bg-gradient-to-br from-orange-400 via-orange-200 to-orange-200 rounded-3xl shadow-2xl overflow-hidden w-full h-full flex flex-col">
+      <div className="flex-1 flex items-center justify-center">
+        <div className="bg-white/60 backdrop-blur-sm p-8 rounded-3xl shadow-lg">
+          <div className="text-xl font-semibold text-gray-700">Стартиране на скоростната игра...</div>
         </div>
       </div>
     </div>
@@ -135,9 +225,29 @@ export const PuzzleDetails = ({ category, onClose }: PuzzleDetailsProps) => {
     return <MathSelection category={category} onClose={onClose} />;
   }
 
+  // If it's memory category, use the specialized memory selection
+  if (category.id === "memory") {
+    return <MemorySelection category={category} onClose={onClose} />;
+  }
+
   // If it's words category, use the specialized words selection
   if (category.id === "words") {
     return <WordsSelection category={category} onClose={onClose} />;
+  }
+
+  // If it's logic category, use the specialized logic selection (procedural levels)
+  if (category.id === "logic") {
+    return <LogicSelection category={category} onClose={onClose} />;
+  }
+
+  // If it's quiz category, use the specialized quiz selection (no level/difficulty choices)
+  if (category.id === "quiz") {
+    return <QuizSelection category={category} onClose={onClose} />;
+  }
+
+  // If it's speed category, use the specialized speed selection (auto-start)
+  if (category.id === "speed") {
+    return <SpeedSelection category={category} onClose={onClose} />;
   }
 
   // Regular component for other categories

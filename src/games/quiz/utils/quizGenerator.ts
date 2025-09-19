@@ -7,9 +7,9 @@ export interface QuizQuestion {
   difficulty: string;
 }
 
-// Generate quiz questions based on theme and difficulty
-export const generateQuizQuestions = (themeId: string, difficultyId: string, count: number) => {
-  console.log(`generateQuizQuestions called with: themeId=${themeId}, difficultyId=${difficultyId}, count=${count}`);
+// Generate quiz questions based on theme (no difficulty filtering)
+export const generateQuizQuestions = (themeId: string, count: number = 10) => {
+  console.log(`generateQuizQuestions called with: themeId=${themeId}, count=${count}`);
   
   const questions: { 
     question: string; 
@@ -173,7 +173,7 @@ export const generateQuizQuestions = (themeId: string, difficultyId: string, cou
     }
   ];
   
-  // Select questions based on theme and difficulty
+  // Select questions based on theme only (no difficulty filtering)
   let themeQuestions: QuizQuestion[] = [];
   
   if (themeId === "history") {
@@ -195,17 +195,8 @@ export const generateQuizQuestions = (themeId: string, difficultyId: string, cou
   
   console.log(`Selected ${themeQuestions.length} questions for theme processing`);
   
-  // Filter by difficulty
-  const filteredQuestions = themeQuestions.filter(q => {
-    if (difficultyId === "easy") return q.difficulty === "easy";
-    if (difficultyId === "medium") return q.difficulty === "easy" || q.difficulty === "medium";
-    return true; // hard difficulty includes all questions
-  });
-  
-  console.log(`After difficulty filtering: ${filteredQuestions.length} questions`);
-  
-  // Shuffle and select requested number of questions
-  const shuffledQuestions = [...filteredQuestions].sort(() => Math.random() - 0.5);
+  // Shuffle and select requested number of questions (no difficulty filtering)
+  const shuffledQuestions = [...themeQuestions].sort(() => Math.random() - 0.5);
   
   // Make sure we have enough questions
   const numQuestions = Math.min(count, shuffledQuestions.length);

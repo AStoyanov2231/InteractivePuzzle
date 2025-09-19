@@ -1,15 +1,14 @@
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { GameLevel } from "@/types";
 import { useQuizGame } from "./hooks/useQuizGame";
-import { QuizStartScreen } from "./components/QuizStartScreen";
 import { QuizQuestion } from "./components/QuizQuestion";
 import { QuizFeedback } from "./components/QuizFeedback";
-import { QuizHud } from "./components/QuizHud";
 import { LoadingScreen } from "./components/LoadingScreen";
 import { TimeUpScreen } from "@/components/TimeUpScreen";
+import { QuizCategorySelector, quizCategories } from "./components/QuizCategorySelector";
 import { Button } from "@/components/ui/button";
-import { Trophy, Home } from "lucide-react";
+import { Trophy, Home, Check, RefreshCw } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { gameStatsService } from "@/services/gameStatsService";
 
@@ -28,6 +27,32 @@ interface QuizGameProps {
   onPlayerTurn?: (playerId: string) => void;
 }
 
+// Chronometer-style timer display (matches other games)
+const Chronometer: React.FC<{ label?: string; seconds: number; hasStarted: boolean }>
+  = ({ label = "", seconds, hasStarted }) => {
+  const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
+  const secs = (seconds % 60).toString().padStart(2, '0');
+  return (
+    <div className="w-full">
+      <div className="text-center text-sm text-gray-600 mb-2">{label}</div>
+      <div className="relative mx-auto w-36 h-36">
+        <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-12 h-6 bg-gray-300 rounded-t-xl shadow" />
+        <div className="absolute inset-0 rounded-full bg-gradient-to-b from-slate-50 to-slate-200 border-4 border-slate-300 shadow-xl" />
+        <div className="absolute inset-2 rounded-full bg-white shadow-inner" />
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="text-2xl font-bold tabular-nums tracking-wider">
+            {hasStarted ? `${mins}:${secs}` : "00:00"}
+          </div>
+        </div>
+        <div className="absolute top-3 left-1/2 -translate-x-1/2 w-1 h-3 bg-slate-400 rounded" />
+        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 w-1 h-3 bg-slate-400 rounded" />
+        <div className="absolute top-1/2 -translate-y-1/2 left-3 w-3 h-1 bg-slate-400 rounded" />
+        <div className="absolute top-1/2 -translate-y-1/2 right-3 w-3 h-1 bg-slate-400 rounded" />
+      </div>
+    </div>
+  );
+};
+
 export const QuizGame: React.FC<QuizGameProps> = ({ 
   level, 
   onComplete, 
@@ -36,6 +61,13 @@ export const QuizGame: React.FC<QuizGameProps> = ({
   onPlayerTurn 
 }) => {
   const navigate = useNavigate();
+  
+  // Always start without category selected to force category picker (like other games)
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  
+  // Update level with selected category
+  const updatedLevel = selectedCategory ? { ...level, themeId: selectedCategory } : level;
+  
   const {
     questions,
     currentQuestionIndex,
@@ -54,15 +86,19 @@ export const QuizGame: React.FC<QuizGameProps> = ({
     formatTime,
     getThemeTitle,
     resetTimer,
+    stopTimer,
     currentPlayerIndex,
     setCurrentPlayerIndex,
     completeGame,
     totalAttempts,
     showCompletionScreen
-  } = useQuizGame(level, onComplete, onTimeUp, currentTeam, onPlayerTurn);
+  } = useQuizGame(updatedLevel, onComplete, onTimeUp, currentTeam, onPlayerTurn);
 
   // Custom handler for Complete Game button
   const handleCompleteGame = async () => {
+    // Stop timer first
+    stopTimer();
+    
     // Submit stats when completing game manually
     if (gameStatsService.isSinglePlayerMode(currentTeam)) {
       try {
@@ -78,6 +114,26 @@ export const QuizGame: React.FC<QuizGameProps> = ({
     }
     
     completeGame();
+  };
+
+  // Handle category selection and auto-start game
+  const handleCategorySelect = (categoryId: string) => {
+    setSelectedCategory(categoryId);
+  };
+
+  // Auto-start game when category is selected
+  useEffect(() => {
+    if (selectedCategory && !gameStarted && !currentTeam) {
+      // Automatically start the game once category is selected
+      handleStartGame();
+    }
+  }, [selectedCategory, gameStarted, handleStartGame, currentTeam]);
+
+  // Handle game reset
+  const handleReset = () => {
+    setSelectedCategory(null);
+    // Reset the quiz state
+    window.location.reload(); // Simple reset for quiz game
   };
 
   // Auto-start game in competitive mode
@@ -137,15 +193,9 @@ export const QuizGame: React.FC<QuizGameProps> = ({
     );
   }
 
-  if (!gameStarted && !currentTeam) {
-    return (
-      <QuizStartScreen 
-        title={getThemeTitle()} 
-        timeLimit={level.timeLimit} 
-        onStart={handleStartGame} 
-        formatTime={formatTime} 
-      />
-    );
+  // Show category selection if no category selected
+  if (!selectedCategory && !currentTeam) {
+    return <QuizCategorySelector onCategorySelect={handleCategorySelect} />;
   }
 
   // If questions are still loading or quiz is completed
@@ -162,11 +212,6 @@ export const QuizGame: React.FC<QuizGameProps> = ({
     return <LoadingScreen message="Подготвяне на въпроса..." />;
   }
 
-  const handleReset = () => {
-    // Reset the quiz state
-    window.location.reload(); // Simple reset for quiz game
-  };
-
   return (
     <>
       {showTimeUpScreen && (
@@ -175,29 +220,80 @@ export const QuizGame: React.FC<QuizGameProps> = ({
         />
       )}
       
-      <div className="flex flex-col items-center w-full max-w-4xl mx-auto">
-        <QuizHud 
-          timeLeft={timeLeft}
-          currentQuestion={currentQuestionIndex}
-          totalQuestions={questions.length}
-          formatTime={formatTime}
-          hasStarted={hasStarted}
-          onComplete={handleCompleteGame}
-          isCompetitive={!!currentTeam}
-        />
+      <div className="flex w-full gap-4 items-start -mx-4">
+        {/* LEFT SIDEBAR */}
+        <aside className="w-[220px] shrink-0 pl-4">
+          <div className="sticky top-6">
+            <div className="bg-white rounded-2xl shadow-md p-4 mb-4">
+              <Chronometer seconds={timeLeft} hasStarted={hasStarted} />
+            </div>
+            <div className="bg-white rounded-2xl shadow-md p-6 mb-4">
+              <div className="space-y-4 text-lg">
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-600">Въпрос</span>
+                  <span className="font-semibold">{currentQuestionIndex + 1}/{questions.length}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-600">Верни</span>
+                  <span className="font-semibold">{score}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-600">Категория</span>
+                  <span className="font-semibold">{quizCategories.find(c => c.id === selectedCategory)?.name}</span>
+                </div>
+                {currentTeam && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-600">Играч</span>
+                    <span className="font-semibold">{currentTeam.players[currentPlayerIndex]?.name || 'Играч'}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="bg-white rounded-2xl shadow-md p-3 space-y-2">
+              <Button variant="outline" onClick={handleReset} className="w-full">
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Започни отначало
+              </Button>
+              {!currentTeam && (
+                <Button 
+                  variant="outline"
+                  onClick={handleCompleteGame}
+                  className="w-full bg-green-100 hover:bg-green-200 border-green-300 text-green-700"
+                >
+                  <Check className="w-4 h-4 mr-2" />
+                  Завърши играта
+                </Button>
+              )}
+            </div>
+          </div>
+        </aside>
 
-        <QuizQuestion 
-          question={currentQuestion.question}
-          options={currentQuestion.options}
-          selectedOption={selectedOption}
-          feedback={feedback}
-          onSelect={handleOptionSelect}
-        />
+        {/* MAIN AREA */}
+        <div className="flex-1 flex flex-col items-center">
+          <div className="bg-white rounded-lg shadow-md p-8 w-full">
+            <div className="text-center mb-6">
+              <h3 className="text-2xl font-bold text-gray-800 mb-2">
+                Викторина - {quizCategories.find(c => c.id === selectedCategory)?.name}
+              </h3>
+              <p className="text-gray-600">
+                Отговорете на въпроса по-долу
+              </p>
+            </div>
+            
+            <QuizQuestion 
+              question={currentQuestion.question}
+              options={currentQuestion.options}
+              selectedOption={selectedOption}
+              feedback={feedback}
+              onSelect={handleOptionSelect}
+            />
 
-        <QuizFeedback 
-          feedback={feedback} 
-          correctAnswer={feedback === "incorrect" ? currentQuestion.options[currentQuestion.correctIndex] : undefined} 
-        />
+            <QuizFeedback 
+              feedback={feedback} 
+              correctAnswer={feedback === "incorrect" ? currentQuestion.options[currentQuestion.correctIndex] : undefined} 
+            />
+          </div>
+        </div>
       </div>
     </>
   );

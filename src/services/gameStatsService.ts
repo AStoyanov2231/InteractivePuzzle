@@ -1,9 +1,10 @@
 interface GameCompletionData {
   username: string;
-  time: number; // Time in seconds from stopwatch
+  time: string; // Time in "MM:SS" format
+  timeSeconds: number; // Time in seconds for calculations
   correct: number;
   wrong: number;
-  gameType: 'math' | 'word' | 'quiz' | 'speed';
+  gameType: 'math' | 'word' | 'quiz' | 'speed' | 'memory' | 'logic';
 }
 
 interface ApiResponse {
@@ -13,14 +14,33 @@ interface ApiResponse {
 }
 
 class GameStatsService {
-  private readonly API_ENDPOINT = 'https://sports.ue-varna.bg/api.php';
+  private readonly API_ENDPOINT = 'http://localhost:3001/api/game-stats';
+
+  /**
+   * Converts seconds to MM:SS format
+   */
+  private formatTime(seconds: number): string {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = Math.floor(seconds % 60);
+    return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+  }
 
   /**
    * Sends game completion data to the remote API
    */
   async submitGameStats(data: GameCompletionData): Promise<ApiResponse> {
     try {
-      console.log('Submitting game stats:', data);
+
+      const requestBody = {
+        username: data.username,
+        time: data.time,
+        timeSeconds: data.timeSeconds,
+        correct: data.correct,
+        wrong: data.wrong,
+        gameType: data.gameType,
+      };
+
+      // console.log('📤 Request body:', JSON.stringify(requestBody, null, 2));
 
       const response = await fetch(this.API_ENDPOINT, {
         method: 'POST',
@@ -28,28 +48,32 @@ class GameStatsService {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
         },
-        body: JSON.stringify({
-          username: data.username,
-          time: data.time,
-          correct: data.correct,
-          wrong: data.wrong,
-          gameType: data.gameType,
-        }),
+        body: JSON.stringify(requestBody),
       });
 
+      // console.log('📡 Response status:', response.status, response.statusText);
+
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorText = await response.text();
+        console.error('❌ Server error response:', errorText);
+        throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
       }
 
       const result = await response.json();
-      console.log('Game stats submitted successfully:', result);
+      // console.log('✅ Server response:', result);
+      console.log('🎉 Game stats submitted successfully!');
       
       return {
         success: true,
         message: result.message || 'Game stats submitted successfully',
       };
     } catch (error) {
-      console.error('Failed to submit game stats:', error);
+      // console.error('❌ Failed to submit game stats:', error);
+      
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        // console.error('🔌 Network error - make sure the dummy server is running on localhost:3001');
+        // console.error('💡 Start server: cd game-stats-server && npm start');
+      }
       
       return {
         success: false,
@@ -70,7 +94,8 @@ class GameStatsService {
     
     return this.submitGameStats({
       username,
-      time: params.timeElapsed,
+      time: this.formatTime(params.timeElapsed),
+      timeSeconds: params.timeElapsed,
       correct: params.correctAnswers,
       wrong: params.totalProblems - params.correctAnswers,
       gameType: 'math',
@@ -89,7 +114,8 @@ class GameStatsService {
     
     return this.submitGameStats({
       username,
-      time: params.timeElapsed,
+      time: this.formatTime(params.timeElapsed),
+      timeSeconds: params.timeElapsed,
       correct: params.correctAnswers,
       wrong: params.totalAttempts - params.correctAnswers,
       gameType: 'word',
@@ -108,7 +134,8 @@ class GameStatsService {
     
     return this.submitGameStats({
       username,
-      time: params.timeElapsed,
+      time: this.formatTime(params.timeElapsed),
+      timeSeconds: params.timeElapsed,
       correct: params.score,
       wrong: params.totalAttempts - params.score,
       gameType: 'quiz',
@@ -127,10 +154,52 @@ class GameStatsService {
     
     return this.submitGameStats({
       username,
-      time: params.timeElapsed,
+      time: this.formatTime(params.timeElapsed),
+      timeSeconds: params.timeElapsed,
       correct: params.correctAnswers,
       wrong: params.wrongAnswers,
       gameType: 'speed',
+    });
+  }
+
+  /**
+   * Helper method for Memory game completion
+   */
+  async submitMemoryGameStats(params: {
+    movesUsed: number;
+    maxMoves: number;
+    timeElapsed: number;
+    completed: boolean;
+  }): Promise<ApiResponse> {
+    const username = localStorage.getItem('currentPlayerName') || 'Anonymous';
+    
+    return this.submitGameStats({
+      username,
+      time: this.formatTime(params.timeElapsed),
+      timeSeconds: params.timeElapsed,
+      correct: params.completed ? 1 : 0,
+      wrong: params.completed ? 0 : 1,
+      gameType: 'memory',
+    });
+  }
+
+  /**
+   * Helper method for Logic game completion
+   */
+  async submitLogicGameStats(params: {
+    movesUsed: number;
+    timeElapsed: number;
+    completed: boolean;
+  }): Promise<ApiResponse> {
+    const username = localStorage.getItem('currentPlayerName') || 'Anonymous';
+    
+    return this.submitGameStats({
+      username,
+      time: this.formatTime(params.timeElapsed),
+      timeSeconds: params.timeElapsed,
+      correct: params.completed ? 1 : 0,
+      wrong: params.completed ? 0 : 1,
+      gameType: 'logic',
     });
   }
 

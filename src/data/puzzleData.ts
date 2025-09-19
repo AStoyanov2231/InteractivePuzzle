@@ -166,7 +166,7 @@ export const puzzleCategories: PuzzleCategory[] = [
     icon: "question.png",
     backgroundColor: "#FCE7F3",
     themes: themes.quiz,
-    difficulties: difficulties,
+    difficulties: normalDifficulty,
     levels: [
       { id: 1 },
       { id: 2 },

@@ -2,6 +2,8 @@ import React, { useState, useRef, useCallback, useEffect } from "react";
 import { GameLevel } from "@/types";
 import { ColorMatchGame } from "./components/ColorMatchGame";
 import { SpeedGameResults } from "./components/SpeedGameResults";
+import { Button } from "@/components/ui/button";
+import { Check, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { gameStatsService } from "@/services/gameStatsService";
 
@@ -11,7 +13,34 @@ interface SpeedGameProps {
   onTimeUp: () => void;
 }
 
+// Chronometer-style timer display (matches other games)
+const Chronometer: React.FC<{ label?: string; seconds: number; hasStarted: boolean }>
+  = ({ label = "", seconds, hasStarted }) => {
+  const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
+  const secs = (seconds % 60).toString().padStart(2, '0');
+  return (
+    <div className="w-full">
+      <div className="text-center text-sm text-gray-600 mb-2">{label}</div>
+      <div className="relative mx-auto w-36 h-36">
+        <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-12 h-6 bg-gray-300 rounded-t-xl shadow" />
+        <div className="absolute inset-0 rounded-full bg-gradient-to-b from-slate-50 to-slate-200 border-4 border-slate-300 shadow-xl" />
+        <div className="absolute inset-2 rounded-full bg-white shadow-inner" />
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="text-2xl font-bold tabular-nums tracking-wider">
+            {hasStarted ? `${mins}:${secs}` : "00:00"}
+          </div>
+        </div>
+        <div className="absolute top-3 left-1/2 -translate-x-1/2 w-1 h-3 bg-slate-400 rounded" />
+        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 w-1 h-3 bg-slate-400 rounded" />
+        <div className="absolute top-1/2 -translate-y-1/2 left-3 w-3 h-1 bg-slate-400 rounded" />
+        <div className="absolute top-1/2 -translate-y-1/2 right-3 w-3 h-1 bg-slate-400 rounded" />
+      </div>
+    </div>
+  );
+};
+
 export const SpeedGame: React.FC<SpeedGameProps> = ({ level, onComplete, onTimeUp }) => {
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [gameStarted, setGameStarted] = useState(false);
   const [gameEnded, setGameEnded] = useState(false);
   const [timeElapsed, setTimeElapsed] = useState(0); // Changed from timeLeft to timeElapsed
@@ -21,8 +50,8 @@ export const SpeedGame: React.FC<SpeedGameProps> = ({ level, onComplete, onTimeU
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const { toast } = useToast();
 
-  // Game speed based on difficulty
-  const speed = level.difficultyId === "easy" ? 2000 : 1000; // 2 seconds for easy, 1 second for others
+  // Game speed based on selected category
+  const speed = selectedCategory === "slow" ? 2000 : 1000;
 
   const startGame = useCallback(() => {
     setGameStarted(true);
@@ -88,6 +117,19 @@ export const SpeedGame: React.FC<SpeedGameProps> = ({ level, onComplete, onTimeU
     setGameStarted(false);
   }, []);
 
+  const handleReset = useCallback(() => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+    }
+    setSelectedCategory(null);
+    setGameStarted(false);
+    setGameEnded(false);
+    setTimeElapsed(0);
+    setCorrectAnswers(0);
+    setWrongAnswers(0);
+    setTotalAttempts(0);
+  }, []);
+
   useEffect(() => {
     return () => {
       if (timerRef.current) {
@@ -96,12 +138,12 @@ export const SpeedGame: React.FC<SpeedGameProps> = ({ level, onComplete, onTimeU
     };
   }, []);
 
-  // Start game immediately without intro
+  // Start game when category is selected
   useEffect(() => {
-    if (!gameStarted && !gameEnded) {
+    if (selectedCategory && !gameStarted && !gameEnded) {
       startGame();
     }
-  }, [gameStarted, gameEnded, startGame]);
+  }, [selectedCategory, gameStarted, gameEnded, startGame]);
 
   if (gameEnded) {
     return (
@@ -115,33 +157,98 @@ export const SpeedGame: React.FC<SpeedGameProps> = ({ level, onComplete, onTimeU
     );
   }
 
+  if (!selectedCategory) {
+    return (
+      <div className="flex flex-col items-center justify-center w-full max-w-4xl mx-auto py-12">
+        <div className="bg-white rounded-lg shadow-xl p-8 text-center max-w-2xl w-full">
+          <h2 className="text-3xl font-bold text-gray-800 mb-6">Изберете скорост</h2>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <button
+              onClick={() => setSelectedCategory("slow")}
+              className="flex flex-col items-center p-6 rounded-xl border-2 border-gray-200 hover:border-gray-400 hover:bg-gray-50 transition-all duration-200 transform hover:scale-105"
+            >
+              <div className="text-4xl mb-4 p-3 rounded-lg" style={{ backgroundColor: "#10B98120" }}>
+                🐌
+              </div>
+              <span className="text-xl font-semibold text-gray-800">Бавно</span>
+            </button>
+            <button
+              onClick={() => setSelectedCategory("fast")}
+              className="flex flex-col items-center p-6 rounded-xl border-2 border-gray-200 hover:border-gray-400 hover:bg-gray-50 transition-all duration-200 transform hover:scale-105"
+            >
+              <div className="text-4xl mb-4 p-3 rounded-lg" style={{ backgroundColor: "#EF444420" }}>
+                🚀
+              </div>
+              <span className="text-xl font-semibold text-gray-800">Бързо</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex flex-col items-center justify-center h-full p-4">
-      <div className="w-full max-w-lg">
-        <div className="flex justify-between items-center mb-6 p-4 bg-white rounded-lg shadow-md">
-          <div className="flex gap-4">
-            <div className="text-lg font-semibold">
-              Време: {timeElapsed}с
-            </div>
-            <div className="text-lg font-semibold">
-              Правилни: {correctAnswers}
+    <div className="flex w-full gap-4 items-start -mx-4">
+      {/* LEFT SIDEBAR */}
+      <aside className="w-[220px] shrink-0 pl-4">
+        <div className="sticky top-6">
+          <div className="bg-white rounded-2xl shadow-md p-4 mb-4">
+            <Chronometer seconds={timeElapsed} hasStarted={gameStarted} />
+          </div>
+          <div className="bg-white rounded-2xl shadow-md p-6 mb-4">
+            <div className="space-y-4 text-lg">
+              <div className="flex items-center justify-between">
+                <span className="text-gray-600">Верни</span>
+                <span className="font-semibold">{correctAnswers}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-gray-600">Грешни</span>
+                <span className="font-semibold">{wrongAnswers}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-gray-600">Общо</span>
+                <span className="font-semibold">{totalAttempts}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-gray-600">Скорост</span>
+                <span className="font-semibold">{selectedCategory === "slow" ? "Бавно" : "Бързо"}</span>
+              </div>
             </div>
           </div>
-          <button
-            onClick={endGame}
-            className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-semibold transition-colors"
-          >
-            Завърши играта
-          </button>
+          <div className="bg-white rounded-2xl shadow-md p-3 space-y-2">
+            <Button variant="outline" onClick={handleReset} className="w-full">
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Започни отначало
+            </Button>
+            <Button 
+              variant="outline"
+              onClick={endGame}
+              className="w-full bg-green-100 hover:bg-green-200 border-green-300 text-green-700"
+            >
+              <Check className="w-4 h-4 mr-2" />
+              Завърши играта
+            </Button>
+          </div>
         </div>
-        
-        <ColorMatchGame
-          speed={speed}
-          onCorrect={handleCorrectAnswer}
-          onIncorrect={handleWrongAnswer}
-          gameActive={!gameEnded}
-          difficulty={level.difficultyId}
-        />
+      </aside>
+
+      {/* MAIN AREA */}
+      <div className="flex-1 flex flex-col items-center">
+        <div className="bg-white rounded-lg shadow-md p-8 w-full">
+          <div className="text-center mb-6">
+          </div>
+          
+          <div className="flex justify-center">
+            <ColorMatchGame
+              speed={speed}
+              onCorrect={handleCorrectAnswer}
+              onIncorrect={handleWrongAnswer}
+              gameActive={!gameEnded}
+              difficulty={selectedCategory === "slow" ? "easy" : "hard"}
+            />
+          </div>
+        </div>
       </div>
     </div>
   );

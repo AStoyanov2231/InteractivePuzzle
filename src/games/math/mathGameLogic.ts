@@ -1,8 +1,21 @@
 export interface MathProblem {
-  equation: string;
+  // mode indicates if this is a simple equation or a crossword-style grid
+  mode?: 'equation' | 'grid';
+  equation?: string;
+  grid?: GridCell[][];
   blanks: { id: string; position: number; correctValue: string; type: 'number' | 'operator' }[];
   options: string[];
   correctAnswer: number;
+}
+
+export interface GridCell {
+  id: string;
+  row: number;
+  col: number;
+  kind: 'fixed' | 'blank' | 'empty';
+  type?: 'number' | 'operator' | 'equals';
+  value?: string; // For fixed or equals cells
+  correctValue?: string; // For blank cells
 }
 
 export interface DragItem {
@@ -501,6 +514,7 @@ export const generateMathProblems = (selectedOperations: string[], count: number
     options = options.sort(() => Math.random() - 0.5);
     
     problems.push({
+      mode: 'equation',
       equation,
       blanks,
       options,
@@ -510,3 +524,321 @@ export const generateMathProblems = (selectedOperations: string[], count: number
   
   return problems;
 }; 
+
+// ---------------- GRID (CROSSWORD) GENERATION ----------------
+
+// Helper: ensure op symbols used in UI, not JS
+const pickAvailableOps = (selectedOperations: string[]): string[] => {
+  const operationMap: { [key: string]: string } = {
+    addition: "+",
+    subtraction: "-", 
+    multiplication: "×",
+    division: "÷"
+  };
+  const ops = selectedOperations.map(op => operationMap[op]).filter(Boolean);
+  return ops.length > 0 ? ops : ["+"];
+};
+
+// Generate a single-digit equation A op B = R, optionally fixing A
+const generateSingleDigitEquation = (op: string, fixedFirst?: number): [number, number, number] => {
+  let a = fixedFirst ?? (Math.floor(Math.random() * 9) + 1);
+  let b = 1;
+  let r = 0;
+  let attempts = 0;
+
+  while (attempts < 100) {
+    if (fixedFirst === undefined) {
+      a = Math.floor(Math.random() * 9) + 1; // 1..9
+    }
+    switch (op) {
+      case '+': {
+        // a + b <= 9
+        b = Math.floor(Math.random() * (9 - a)) + 1; // 1..(9-a)
+        r = a + b;
+        break;
+      }
+      case '-': {
+        // a - b >= 1
+        if (a <= 1) { a = 2; }
+        b = Math.floor(Math.random() * (a - 1)) + 1; // 1..a-1
+        r = a - b;
+        break;
+      }
+      case '×': {
+        // a * b <= 9
+        const candidates: [number, number][] = [];
+        for (let x = 1; x <= 9; x++) {
+          for (let y = 1; y <= 9; y++) {
+            if ((fixedFirst ? x === a : true) && x * y <= 9) {
+              candidates.push([x, y]);
+            }
+          }
+        }
+        if (candidates.length === 0) { a = 1; }
+        const pick = candidates[Math.floor(Math.random() * candidates.length)] || [1, 1];
+        a = pick[0];
+        b = pick[1];
+        r = a * b;
+        break;
+      }
+      case '÷': {
+        // a / b is integer in 1..9 and a <= 9
+        // So pick b in 2..9, r in 1..Math.floor(9/b), then a = b*r
+        const divisors: number[] = [];
+        for (let d = 2; d <= 9; d++) {
+          if (!fixedFirst || (fixedFirst % d === 0 && fixedFirst / d <= 9)) {
+            divisors.push(d);
+          }
+        }
+        if (divisors.length === 0) { a = 6; b = 3; r = 2; break; }
+        b = divisors[Math.floor(Math.random() * divisors.length)];
+        const maxR = Math.floor(9 / b) || 1;
+        r = Math.max(1, Math.floor(Math.random() * maxR) + 1);
+        a = fixedFirst ?? (b * r);
+        r = Math.floor(a / b);
+        break;
+      }
+      default: {
+        b = 1; r = a + b; break;
+      }
+    }
+    if (r >= 0 && r <= 9) break;
+    attempts++;
+  }
+  return [a, b, r];
+};
+
+// Enumerate all valid single-digit (1..9) triples (A, B, R) for op within 0..9 result
+const enumerateTriples = (op: string): Array<{ A: number; B: number; R: number }> => {
+  const triples: Array<{ A: number; B: number; R: number }> = [];
+  for (let A = 1; A <= 9; A++) {
+    for (let B = 1; B <= 9; B++) {
+      let R = 0;
+      switch (op) {
+        case '+': R = A + B; break;
+        case '-': R = A - B; break;
+        case '×': R = A * B; break;
+        case '÷': if (B !== 0 && A % B === 0) R = A / B; else R = -1; break;
+        default: R = A + B;
+      }
+      if (R >= 0 && R <= 9 && Number.isInteger(R)) {
+        // keep within 1..9 for A,B and 0..9 for R
+        if (op !== '÷' || (B >= 2 && R >= 1)) {
+          triples.push({ A, B, R });
+        }
+      }
+    }
+  }
+  return triples;
+};
+
+type Constraint = Partial<{ A: number; B: number; R: number; op: string }>;
+
+const chooseTripleWithConstraints = (ops: string[], constraint: Constraint): { A: number; B: number; R: number; op: string } | null => {
+  const opsToTry = constraint.op ? [constraint.op] : ops.slice().sort(() => Math.random() - 0.5);
+  for (const op of opsToTry) {
+    const candidates = enumerateTriples(op).filter(t =>
+      (constraint.A === undefined || t.A === constraint.A) &&
+      (constraint.B === undefined || t.B === constraint.B) &&
+      (constraint.R === undefined || t.R === constraint.R)
+    );
+    if (candidates.length > 0) {
+      const pick = candidates[Math.floor(Math.random() * candidates.length)];
+      return { ...pick, op };
+    }
+  }
+  return null;
+};
+
+type LineSpec = { r: number; c: number; dir: 'h' | 'v' };
+type ShapeSpec = { size: number; lines: LineSpec[] };
+
+const SHAPES: ShapeSpec[] = [
+  // Cross
+  { size: 5, lines: [ { r:0,c:0,dir:'h' }, { r:2,c:0,dir:'h' }, { r:4,c:0,dir:'h' }, { r:0,c:0,dir:'v' } ] },
+  // T shape
+  { size: 5, lines: [ { r:0,c:0,dir:'h' }, { r:0,c:2,dir:'v' }, { r:2,c:0,dir:'h' } ] },
+  // L shape
+  { size: 5, lines: [ { r:0,c:0,dir:'h' }, { r:0,c:0,dir:'v' }, { r:4,c:0,dir:'h' } ] },
+  // Z-like
+  { size: 5, lines: [ { r:0,c:0,dir:'h' }, { r:4,c:0,dir:'h' }, { r:0,c:4,dir:'v' } ] },
+  // Staggered
+  { size: 5, lines: [ { r:1,c:0,dir:'h' }, { r:3,c:0,dir:'h' }, { r:0,c:2,dir:'v' } ] },
+];
+
+const lineCells = (line: LineSpec): Array<{ r: number; c: number; kind: 'number' | 'operator' | 'equals'; idx: number }> => {
+  const cells: Array<{ r: number; c: number; kind: 'number' | 'operator' | 'equals'; idx: number }> = [];
+  for (let i = 0; i < 5; i++) {
+    const r = line.dir === 'h' ? line.r : line.r + i;
+    const c = line.dir === 'h' ? line.c + i : line.c;
+    const kind: 'number' | 'operator' | 'equals' = (i === 1) ? 'operator' : (i === 3) ? 'equals' : 'number';
+    cells.push({ r, c, kind, idx: i });
+  }
+  return cells;
+};
+
+export const generateMathGridProblem = (selectedOperations: string[], difficultyId: string = 'medium'): MathProblem => {
+  const ops = pickAvailableOps(selectedOperations);
+  // pick a shape randomly
+  const shape = SHAPES[Math.floor(Math.random() * SHAPES.length)];
+  const size = shape.size;
+  const grid: GridCell[][] = Array.from({ length: size }, (_, r) => (
+    Array.from({ length: size }, (_, c) => ({
+      id: `cell_${r}_${c}`,
+      row: r,
+      col: c,
+      kind: 'empty' as const,
+    }))
+  ));
+
+  // We'll store assigned values per cell
+  type Assigned = { type: 'number' | 'operator' | 'equals'; value: string };
+  const assigned: Record<string, Assigned> = {};
+
+  const setFixed = (r: number, c: number, value: string, type: 'number' | 'operator' | 'equals') => {
+    grid[r][c] = { id: `cell_${r}_${c}`, row: r, col: c, kind: 'fixed', type, value };
+    assigned[`${r},${c}`] = { type, value };
+  };
+  const setBlank = (r: number, c: number, correctValue: string, type: 'number' | 'operator') => {
+    grid[r][c] = { id: `cell_${r}_${c}`, row: r, col: c, kind: 'blank', type, correctValue };
+    assigned[`${r},${c}`] = { type, value: correctValue };
+  };
+
+  // Fill lines with constraints from overlaps
+  const tryFill = (): boolean => {
+    // Reset grid/assigned
+    for (let r = 0; r < size; r++) {
+      for (let c = 0; c < size; c++) {
+        grid[r][c] = { id: `cell_${r}_${c}`, row: r, col: c, kind: 'empty' };
+      }
+    }
+    for (const k in assigned) delete assigned[k];
+
+    for (const line of shape.lines) {
+      const cells = lineCells(line);
+      // Build constraint
+      const constraint: Constraint = {};
+      // operator constraint if cell 1 occupied with operator
+      const opCell = cells[1];
+      const opAssigned = assigned[`${opCell.r},${opCell.c}`];
+      if (opAssigned && opAssigned.type === 'operator') constraint.op = opAssigned.value;
+      const aCell = cells[0];
+      const aAssigned = assigned[`${aCell.r},${aCell.c}`];
+      if (aAssigned && aAssigned.type === 'number') constraint.A = parseInt(aAssigned.value);
+      const bCell = cells[2];
+      const bAssigned = assigned[`${bCell.r},${bCell.c}`];
+      if (bAssigned && bAssigned.type === 'number') constraint.B = parseInt(bAssigned.value);
+      const rCell = cells[4];
+      const rAssigned = assigned[`${rCell.r},${rCell.c}`];
+      if (rAssigned && rAssigned.type === 'number') constraint.R = parseInt(rAssigned.value);
+
+      const choice = chooseTripleWithConstraints(ops, constraint);
+      if (!choice) return false;
+
+      // Place values: A op B = R
+      const vals: Array<{ type: 'number' | 'operator' | 'equals'; value: string }> = [
+        { type: 'number', value: String(choice.A) },
+        { type: 'operator', value: choice.op },
+        { type: 'number', value: String(choice.B) },
+        { type: 'equals', value: '=' },
+        { type: 'number', value: String(choice.R) },
+      ];
+
+      for (let i = 0; i < 5; i++) {
+        const { r, c, kind } = cells[i];
+        const v = vals[i];
+        const prev = assigned[`${r},${c}`];
+        if (prev) {
+          if (prev.type !== v.type || prev.value !== v.value) return false; // conflict
+          // else keep
+          continue;
+        }
+        if (kind === 'equals') {
+          setFixed(r, c, v.value, 'equals');
+        } else {
+          setBlank(r, c, v.value, v.type as 'number' | 'operator');
+        }
+      }
+    }
+    return true;
+  };
+
+  let attempts = 0;
+  while (attempts < 50) {
+    if (tryFill()) break;
+    attempts++;
+  }
+
+  // Reveal hints: ensure each equation line has at least one number fixed
+  // Convert one of A/B/R cells from blank to fixed for each line
+  for (const line of shape.lines) {
+    const cells = lineCells(line);
+    const candidateIdx = [0, 2, 4];
+    // Prefer a blank cell among these to reveal
+    const revealable = candidateIdx.filter(i => {
+      const cell = grid[cells[i].r][cells[i].c];
+      return cell.kind === 'blank' && cell.correctValue && cells[i].kind === 'number';
+    });
+    if (revealable.length > 0) {
+      const pickIndex = revealable[Math.floor(Math.random() * revealable.length)];
+      const target = cells[pickIndex];
+      const origin = grid[target.r][target.c];
+      grid[target.r][target.c] = {
+        id: origin.id,
+        row: target.r,
+        col: target.c,
+        kind: 'fixed',
+        type: 'number',
+        value: origin.correctValue,
+      };
+    }
+  }
+
+  // Collect blanks and build required option multiplicities
+  const blanks: { id: string; position: number; correctValue: string; type: 'number' | 'operator' }[] = [];
+  const requiredCounts = new Map<string, number>();
+  for (let r = 0; r < size; r++) {
+    for (let c = 0; c < size; c++) {
+      const cell = grid[r][c];
+      if (cell.kind === 'blank' && cell.correctValue && cell.type) {
+        blanks.push({ id: cell.id, position: 0, correctValue: cell.correctValue, type: cell.type });
+        const curr = requiredCounts.get(cell.correctValue) || 0;
+        requiredCounts.set(cell.correctValue, curr + 1);
+      }
+    }
+  }
+  // Start options with exact multiplicities for all required values
+  const options: string[] = [];
+  requiredCounts.forEach((count, value) => {
+    for (let i = 0; i < count; i++) options.push(value);
+  });
+
+  // Add decoy numbers close to required ones (unique decoys only once)
+  const decoySet = new Set<string>();
+  const addDecoyNumber = (n: number) => {
+    const candidates = [n - 1, n + 1, n - 2, n + 2];
+    candidates.forEach(x => { if (x >= 1 && x <= 9) decoySet.add(String(x)); });
+  };
+  blanks.forEach(b => {
+    if (b.type === 'number') addDecoyNumber(parseInt(b.correctValue));
+  });
+  decoySet.forEach(v => {
+    // Avoid flooding with duplicates of existing values; add only if not already required in sufficient quantity
+    if (!requiredCounts.has(v)) options.push(v);
+  });
+
+  // Add each available operator once as decoy (in addition to required counts)
+  ops.forEach(op => options.push(op));
+
+  // Shuffle
+  options.sort(() => Math.random() - 0.5);
+
+  const problem: MathProblem = {
+    mode: 'grid',
+    grid,
+    blanks,
+    options,
+    correctAnswer: 0,
+  };
+  return problem;
+};

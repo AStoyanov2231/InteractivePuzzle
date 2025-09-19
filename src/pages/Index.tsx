@@ -164,7 +164,7 @@ const Index = () => {
           <Button 
             onClick={handleBackClick} 
             variant="outline" 
-            className="flex items-center gap-2 rounded-2xl shadow-lg bg-white/60 hover:bg-white/80 backdrop-blur-sm border border-white/30 transition-all duration-200"
+            className="flex items-center gap-2 rounded-2xl shadow-lg bg-white/60 backdrop-blur-sm border border-white/30 transition-all duration-200"
             aria-label="Назад към категориите"
           >
             <ArrowLeft size={18} />
@@ -217,7 +217,7 @@ const Index = () => {
                   <p className="text-gray-700 mb-2 font-medium">Няма създадени отбори</p>
                   <Button 
                     onClick={handleOpenTeamCreation}
-                    className="flex items-center gap-2 w-full rounded-xl bg-white/30 backdrop-blur-sm border border-white/40 hover:bg-white/40 hover:border-white/50 text-gray-800 font-medium shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]"
+                    className="flex items-center gap-2 w-full rounded-xl bg-white/30 backdrop-blur-sm border border-white/40 text-gray-800 font-medium shadow-lg transition-all duration-300"
                     variant="ghost"
                   >
                     <Settings size={16} />
@@ -249,10 +249,10 @@ const Index = () => {
                   {/* Teams List */}
                   <div className="space-y-3 flex-1 overflow-y-auto">
                     {teams.map((team, index) => (
-                      <div key={team.id} className={`flex items-center justify-between p-4 rounded-xl transition-all duration-300 backdrop-blur-sm border shadow-sm hover:shadow-md hover:scale-[1.01] ${
+                      <div key={team.id} className={`flex items-center justify-between p-4 rounded-xl transition-all duration-300 backdrop-blur-sm border shadow-sm ${
                         team.players.length > 0 
-                          ? 'bg-green-100/40 border-green-200/50 hover:bg-green-100/50' 
-                          : 'bg-gray-100/40 border-gray-200/50 hover:bg-gray-100/50'
+                          ? 'bg-green-100/40 border-green-200/50' 
+                          : 'bg-gray-100/40 border-gray-200/50'
                       }`}>
                         <div className="flex items-center gap-3">
                           <div className={`w-8 h-8 rounded-xl text-white text-sm flex items-center justify-center font-bold shadow-lg backdrop-blur-sm ${
@@ -279,7 +279,7 @@ const Index = () => {
                   <div className="space-y-3 pt-4 border-t border-white/30">
                     <Button 
                       onClick={handleOpenTeamManagement}
-                      className="flex items-center gap-2 w-full bg-white/30 backdrop-blur-sm border border-white/40 hover:bg-white/40 hover:border-white/50 text-gray-800 font-medium shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] rounded-xl"
+                      className="flex items-center gap-2 w-full bg-white/30 backdrop-blur-sm border border-white/40 text-gray-800 font-medium shadow-lg transition-all duration-300 rounded-xl"
                       variant="ghost"
                     >
                       <Settings size={16} />
@@ -291,7 +291,7 @@ const Index = () => {
                     {isCompetitiveGameActive && (
               <Button 
                 onClick={handleEndCompetition}
-                        className="flex items-center gap-2 w-full bg-gradient-to-r from-red-400/80 to-red-500/80 hover:from-red-500/80 hover:to-red-600/80 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] backdrop-blur-sm border border-white/20 rounded-xl"
+                        className="flex items-center gap-2 w-full bg-gradient-to-r from-red-400/80 to-red-500/80 text-white font-semibold shadow-lg transition-all duration-300 backdrop-blur-sm border border-white/20 rounded-xl"
               >
                         <Trophy size={16} />
                         <span>Приключи състезанието</span>
@@ -318,36 +318,55 @@ const Index = () => {
                     category={category}
                     onClick={() => handleCategoryClick(category)}
                     disabled={isDisabled}
-                    className={`transition-all duration-200 hover:scale-105 ${
+                    className={`transition-all duration-200 ${
                       isDisabled 
-                        ? 'opacity-50 cursor-not-allowed hover:scale-100' 
-                        : 'hover:shadow-xl'
+                        ? 'opacity-50 cursor-not-allowed' 
+                        : ''
                     }`}
                   />
                 );
               })}
               
-              {/* 3 Additional Image Placeholder Containers */}
+              {/* 3 External Games */}
               {[
-                { id: 1, icon: "brain.png", backgroundColor: "#E0F2FE" },
-                { id: 2, icon: "calculator.png", backgroundColor: "#FCE7F3" },
-                { id: 3, icon: "puzzle.png", backgroundColor: "#F0FDF4" }
+                { 
+                  id: 1, 
+                  icon: "brain.png", 
+                  backgroundColor: "#E0F2FE", 
+                  url: "https://sports.ue-varna.bg/game/colours.php",
+                  title: "Игра с цветове"
+                },
+                { 
+                  id: 2, 
+                  icon: "calculator.png", 
+                  backgroundColor: "#FCE7F3", 
+                  url: "https://sports.ue-varna.bg/game/words.php",
+                  title: "Игра с думи"
+                },
+                { 
+                  id: 3, 
+                  icon: "puzzle.png", 
+                  backgroundColor: "#F0FDF4", 
+                  url: "https://sports.ue-varna.bg/game/tiles.php",
+                  title: "Игра с плочки"
+                }
               ].map((item) => {
                 const imageUrl = `https://astoyanov2231.github.io/InteractivePuzzle-Assets/images/categories/${item.icon}`;
                 
                 return (
                   <div
-                    key={`placeholder-${item.id}`}
-                    className="puzzle-card shadow-lg rounded-2xl h-96 w-30 overflow-hidden touch-manipulation transition-all duration-200 ease-in-out hover:shadow-xl hover:transform hover:-translate-y-1 cursor-pointer active:opacity-90 active:scale-98"
+                    key={`external-game-${item.id}`}
+                    className="puzzle-card shadow-lg rounded-2xl h-96 w-30 overflow-hidden touch-manipulation transition-all duration-200 ease-in-out cursor-pointer"
                     onClick={() => {
-                      // Placeholder click handler - you can add custom URLs here later
-                      console.log(`Placeholder container ${item.id} clicked`);
+                      // Open external game in new tab
+                      window.open(item.url, '_blank', 'noopener,noreferrer');
                     }}
                     style={{ backgroundColor: item.backgroundColor }}
+                    title={item.title}
                   >
                     <img 
                       src={imageUrl}
-                      alt={`Placeholder ${item.id}`}
+                      alt={item.title}
                       className="w-full h-full object-cover"
                       loading="eager"
                       onError={(e) => {
@@ -360,9 +379,9 @@ const Index = () => {
                             <div class="w-full h-full bg-gray-200 flex items-center justify-center">
                               <div class="text-center">
                                 <div class="w-16 h-16 bg-gray-300 rounded-2xl flex items-center justify-center mx-auto mb-4 opacity-50">
-                                  <span class="text-gray-500 text-sm font-medium">IMG</span>
+                                  <span class="text-gray-500 text-sm font-medium">EXT</span>
                                 </div>
-                                <p class="text-gray-500 text-sm opacity-75">Image placeholder ${item.id}</p>
+                                <p class="text-gray-500 text-sm opacity-75">${item.title}</p>
                               </div>
                             </div>
                           `;
@@ -370,7 +389,7 @@ const Index = () => {
                       }}
                     />
                   </div>
-                                 );
+                );
                })}
               </div>
               

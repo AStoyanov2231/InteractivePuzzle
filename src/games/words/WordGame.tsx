@@ -134,8 +134,34 @@ const Chronometer: React.FC<{ label?: string; seconds: number; hasStarted: boole
   );
 };
 
+// Word game categories
+const wordCategories = [
+  { 
+    id: "sport", 
+    name: "Спорт", 
+    icon: "🏆", 
+    color: "#8B5CF6"
+  },
+  { 
+    id: "food", 
+    name: "Храна", 
+    icon: "🍔", 
+    color: "#EC4899"
+  },
+  { 
+    id: "places", 
+    name: "Места", 
+    icon: "🏝️", 
+    color: "#3B82F6"
+  }
+];
+
 export const WordGame: React.FC<WordGameProps> = ({ level, onComplete, onTimeUp }) => {
   const navigate = useNavigate();
+  
+  // Always start without category selected to force category picker
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  
   const [puzzle, setPuzzle] = useState<{ 
     words: string[]; 
     puzzles: WordPuzzle[] 
@@ -166,11 +192,18 @@ export const WordGame: React.FC<WordGameProps> = ({ level, onComplete, onTimeUp 
     enabled: true
   });
   
-  // Initialize the game
+  // Handle category selection
+  const handleCategorySelect = (categoryId: string) => {
+    setSelectedCategory(categoryId);
+  };
+  
+  // Initialize the game when category is selected
   useEffect(() => {
-    const wordPuzzle = generateWordPuzzle(level.themeId);
-    setPuzzle(wordPuzzle);
-  }, [level.themeId]);
+    if (selectedCategory) {
+      const wordPuzzle = generateWordPuzzle(selectedCategory);
+      setPuzzle(wordPuzzle);
+    }
+  }, [selectedCategory]);
 
   // Set up drag items when word changes
   useEffect(() => {
@@ -505,9 +538,8 @@ export const WordGame: React.FC<WordGameProps> = ({ level, onComplete, onTimeUp 
     setGuesses([]);
     setCorrectAnswers(0);
     setTotalAttempts(0);
-    
-    const wordPuzzle = generateWordPuzzle(level.themeId);
-    setPuzzle(wordPuzzle);
+    setSelectedCategory(null);
+    setPuzzle(null);
   };
 
   const formatTime = (seconds: number) => {
@@ -515,6 +547,33 @@ export const WordGame: React.FC<WordGameProps> = ({ level, onComplete, onTimeUp 
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
+
+  // Show category selection if no category selected
+  if (!selectedCategory) {
+    return (
+      <div className="flex flex-col items-center justify-center w-full max-w-4xl mx-auto py-12">
+        <div className="bg-white rounded-lg shadow-xl p-8 text-center max-w-2xl w-full">
+          <h2 className="text-3xl font-bold text-gray-800 mb-6">Изберете категория</h2>
+          <p className="text-lg text-gray-600 mb-8">Изберете тема за думите в играта</p>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {wordCategories.map((category) => (
+              <button
+                key={category.id}
+                onClick={() => handleCategorySelect(category.id)}
+                className="flex flex-col items-center p-6 rounded-xl border-2 border-gray-200 hover:border-gray-400 hover:bg-gray-50 transition-all duration-200 transform hover:scale-105"
+              >
+                <div className="text-4xl mb-4 p-3 rounded-lg" style={{ backgroundColor: `${category.color}20` }}>
+                  {category.icon}
+                </div>
+                <span className="text-xl font-semibold text-gray-800">{category.name}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!puzzle) {
     return (

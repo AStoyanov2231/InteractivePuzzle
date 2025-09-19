@@ -30,8 +30,7 @@ export const PuzzleCard = React.memo(({ category, onClick, className, disabled =
       className={`puzzle-card ${className || ''} 
                   shadow-lg rounded-2xl h-96 w-30 overflow-hidden
                   touch-manipulation transition-all duration-200 ease-in-out
-                  hover:shadow-xl hover:transform hover:-translate-y-1
-                  ${disabled ? 'cursor-not-allowed' : 'active:opacity-90 active:scale-98'}`}
+                  ${disabled ? 'cursor-not-allowed' : 'cursor-pointer'}`}
       onClick={disabled ? undefined : onClick}
       style={{ 
         backgroundColor: category.backgroundColor,

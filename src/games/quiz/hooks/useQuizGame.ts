@@ -33,17 +33,15 @@ export const useQuizGame = (
   const [currentPlayerIndex, setCurrentPlayerIndex] = useState(0);
   
   // Use the game timer hook
-  const { timeLeft, hasStarted, showTimeUpScreen, startTimer, resetTimer } = useGameTimer({
+  const { timeLeft, hasStarted, showTimeUpScreen, startTimer, stopTimer, resetTimer } = useGameTimer({
     enabled: gameStarted
   });
   
   // Initialize the game
   useEffect(() => {
     if (gameStarted) {
-      // Number of questions based on difficulty  
-      const questionCount = currentTeam ? 6 : // Competitive mode: shorter rounds
-                           level.difficultyId === "easy" ? 5 : 
-                           level.difficultyId === "medium" ? 8 : 10;
+      // Always generate 10 questions (no difficulty-based count)
+      const questionCount = currentTeam ? 6 : 10; // Competitive mode: shorter rounds
       
       // For competitive mode, generate random questions from all themes
       let themeId = level.themeId;
@@ -53,20 +51,22 @@ export const useQuizGame = (
         console.log(`Competitive quiz: Selected theme ${themeId} for team ${currentTeam.name}`);
       }
       
-      console.log(`Generating quiz questions: theme=${themeId}, difficulty=${level.difficultyId}, count=${questionCount}`);
-      const quizQuestions = generateQuizQuestions(themeId, level.difficultyId, questionCount);
+      console.log(`Generating quiz questions: theme=${themeId}, count=${questionCount}`);
+      const quizQuestions = generateQuizQuestions(themeId, questionCount);
       console.log(`Generated ${quizQuestions.length} questions:`, quizQuestions);
       setQuestions(quizQuestions);
     }
-  }, [gameStarted, level.themeId, level.difficultyId, currentTeam]);
+  }, [gameStarted, level.themeId, currentTeam]);
 
   // Check game completion
   useEffect(() => {
     if (questions.length > 0 && currentQuestionIndex >= questions.length) {
+      // Stop timer when game completes
+      stopTimer();
       // Game completed
       onComplete();
     }
-  }, [currentQuestionIndex, questions.length, onComplete]);
+  }, [currentQuestionIndex, questions.length, onComplete, stopTimer]);
 
   const handleOptionSelect = (optionIndex: number) => {
     if (feedback !== null) return;
@@ -127,6 +127,7 @@ export const useQuizGame = (
 
   // Complete game immediately for testing
   const completeGame = () => {
+    stopTimer();
     if (currentTeam) {
       setCurrentQuestionIndex(questions.length);
       onComplete();
@@ -153,6 +154,7 @@ export const useQuizGame = (
     formatTime,
     getThemeTitle,
     resetTimer,
+    stopTimer,
     currentPlayerIndex,
     setCurrentPlayerIndex,
     completeGame,

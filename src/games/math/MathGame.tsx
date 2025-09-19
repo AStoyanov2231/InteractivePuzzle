@@ -8,6 +8,9 @@ import { TimeUpScreen } from "@/components/TimeUpScreen";
 import { gameStatsService } from "@/services/gameStatsService";
 import { 
   generateMathProblems, 
+  generateMathGridProblem,
+  evaluateExpression,
+  evaluateFourNumberExpression,
   type MathProblem, 
   type DragItem, 
   type TouchState 
@@ -81,11 +84,11 @@ export const MathGame: React.FC<MathGameProps> = ({ level, onComplete, onTimeUp,
     // Extract selected operations from level.themeId (could be comma-separated)
     const selectedOperations = level.themeId.split(',').map(s => s.trim());
     
-    // Generate 8 problems (medium complexity)
-    const problemCount = 8;
-    const mathProblems = generateMathProblems(selectedOperations, problemCount, level.difficultyId);
-    setProblems(mathProblems);
-  }, [level.themeId]);
+    // Generate 8 grid puzzles (crossword-style), each with different shapes
+    const gridCount = 8;
+    const gridProblems = Array.from({ length: gridCount }, () => generateMathGridProblem(selectedOperations, level.difficultyId));
+    setProblems(gridProblems);
+  }, [level.themeId, level.difficultyId]);
 
   // Set up drag items when problem changes
   useEffect(() => {
@@ -107,6 +110,9 @@ export const MathGame: React.FC<MathGameProps> = ({ level, onComplete, onTimeUp,
     if (problems.length > 0 && currentProblemIndex >= problems.length && !showCompletionScreen) {
       console.log("Game completed! Current index:", currentProblemIndex, "Problems length:", problems.length);
       
+      // Stop the timer when game completes
+      stopTimer();
+      
       // In competitive mode, just call onComplete to switch teams
       if (currentTeam) {
         onComplete();
@@ -115,7 +121,7 @@ export const MathGame: React.FC<MathGameProps> = ({ level, onComplete, onTimeUp,
         setShowCompletionScreen(true);
       }
     }
-  }, [currentProblemIndex, problems.length, showCompletionScreen, currentTeam, onComplete]);
+  }, [currentProblemIndex, problems.length, showCompletionScreen, currentTeam, onComplete, stopTimer]);
 
   // Removed countdown logic - user clicks button to return home
 
@@ -310,11 +316,120 @@ export const MathGame: React.FC<MathGameProps> = ({ level, onComplete, onTimeUp,
     
     const currentProblem = problems[currentProblemIndex];
     let isCorrect = true;
-    
-    for (const blank of currentProblem.blanks) {
-      if (droppedItems[blank.id] !== blank.correctValue) {
+
+    const convertOp = (op: string) => op === '×' ? '*' : op === '÷' ? '/' : op;
+
+    if (currentProblem.mode === 'grid' && currentProblem.grid) {
+      // Evaluate every 5-cell line centered on an '=' horizontally and vertically
+      const nRows = currentProblem.grid.length;
+      const nCols = currentProblem.grid[0]?.length || 0;
+      const getCellValue = (r: number, c: number): { type: 'number' | 'operator' | 'equals'; value: string } | null => {
+        const cell = currentProblem.grid![r][c];
+        if (cell.kind === 'fixed') {
+          return { type: (cell.type as any) || 'number', value: cell.value || '' };
+        } else if (cell.kind === 'blank') {
+          const v = droppedItems[cell.id];
+          if (!v) return null;
+          return { type: (cell.type as any) || 'number', value: v };
+        }
+        return null;
+      };
+
+      const checkLine = (cells: Array<{ r: number; c: number }>) => {
+        // Expected pattern: [A, op, B, '=', R]
+        const vals = cells.map(({ r, c }) => getCellValue(r, c));
+        if (vals.some(v => v === null)) return false;
+        const [aCell, opCell, bCell, eqCell, rCell] = vals as any[];
+        if (eqCell.type !== 'equals') return false;
+        const a = parseInt(aCell.value, 10);
+        const b = parseInt(bCell.value, 10);
+        const r = parseInt(rCell.value, 10);
+        const op = convertOp(opCell.value);
+        if ([a, b, r].some(x => Number.isNaN(x))) return false;
+        switch (op) {
+          case '+': return a + b === r;
+          case '-': return a - b === r;
+          case '*': return a * b === r;
+          case '/': return b !== 0 && a / b === r;
+          default: return false;
+        }
+      };
+
+      outer: for (let r = 0; r < nRows; r++) {
+        for (let c = 0; c < nCols; c++) {
+          const cell = currentProblem.grid[r][c];
+          if (cell.kind === 'fixed' && cell.type === 'equals') {
+            // horizontal
+            if (c - 3 >= 0 && c + 1 < nCols) {
+              const hCells = [
+                { r, c: c - 3 },
+                { r, c: c - 2 },
+                { r, c: c - 1 },
+                { r, c },
+                { r, c: c + 1 },
+              ];
+              const usable = hCells.every(({ r: rr, c: cc }) => currentProblem.grid![rr][cc].kind !== 'empty');
+              if (usable && !checkLine(hCells)) { isCorrect = false; break outer; }
+            }
+            // vertical
+            if (r - 3 >= 0 && r + 1 < nRows) {
+              const vCells = [
+                { r: r - 3, c },
+                { r: r - 2, c },
+                { r: r - 1, c },
+                { r, c },
+                { r: r + 1, c },
+              ];
+              const usable = vCells.every(({ r: rr, c: cc }) => currentProblem.grid![rr][cc].kind !== 'empty');
+              if (usable && !checkLine(vCells)) { isCorrect = false; break outer; }
+            }
+          }
+        }
+      }
+    } else {
+      // Equation mode: parse tokens around '=' and evaluate with precedence
+      const tmpl = currentProblem.equation || '';
+      const tokens = tmpl.trim().split(/\s+/).map(tok => {
+        const m = tok.match(/^BLANK_(\d+)$/);
+        if (m) {
+          const id = `blank_${m[1]}`;
+          return droppedItems[id] || '';
+        }
+        return tok;
+      });
+      const eqIdx = tokens.indexOf('=');
+      if (eqIdx === -1) {
         isCorrect = false;
-        break;
+      } else {
+        const lhsTokens = tokens.slice(0, eqIdx);
+        const rhsValue = parseInt(tokens[eqIdx + 1], 10);
+        // Extract numbers/operators
+        const nums: number[] = [];
+        const ops: string[] = [];
+        for (let i = 0; i < lhsTokens.length; i++) {
+          if (i % 2 === 0) {
+            const n = parseInt(lhsTokens[i], 10);
+            if (Number.isNaN(n)) { isCorrect = false; break; }
+            nums.push(n);
+          } else {
+            ops.push(lhsTokens[i]);
+          }
+        }
+        if (isCorrect) {
+          let value = 0;
+          if (nums.length === 2) {
+            value = evaluateExpression(nums[0], ops[0], nums[1]);
+          } else if (nums.length === 3) {
+            value = evaluateExpression(nums[0], ops[0], nums[1], ops[1], nums[2]);
+          } else if (nums.length === 4) {
+            value = evaluateFourNumberExpression(nums[0], ops[0], nums[1], ops[1], nums[2], ops[2], nums[3]);
+          } else {
+            isCorrect = false;
+          }
+          if (isCorrect) {
+            isCorrect = value === rhsValue;
+          }
+        }
       }
     }
     
@@ -394,6 +509,66 @@ export const MathGame: React.FC<MathGameProps> = ({ level, onComplete, onTimeUp,
     return result;
   };
 
+  const renderGrid = (grid: NonNullable<MathProblem['grid']>, blanks: MathProblem['blanks']) => {
+    return (
+      <div className="inline-block">
+        <div
+          className="grid gap-1"
+          style={{ gridTemplateColumns: `repeat(${grid[0]?.length || 0}, 3rem)` }}
+        >
+          {grid.flat().map(cell => {
+            if (cell.kind === 'empty') {
+              return <div key={cell.id} className="w-12 h-12" />;
+            }
+            if (cell.kind === 'fixed') {
+              return (
+                <div
+                  key={cell.id}
+                  className={`w-12 h-12 rounded-md border flex items-center justify-center text-xl font-semibold ${
+                    cell.type === 'equals' ? 'bg-slate-100 border-slate-300' : 'bg-gray-100 border-gray-300'
+                  }`}
+                >
+                  {cell.value}
+                </div>
+              );
+            }
+            // blank cell
+            const droppedValue = droppedItems[cell.id];
+            const isOperator = cell.type === 'operator';
+            return (
+              <div
+                key={cell.id}
+                ref={(el) => { dropZoneRefs.current[cell.id] = el; }}
+                data-drop-zone={cell.id}
+                data-blank-type={cell.type}
+                onDragOver={handleDragOver}
+                onDrop={(e) => handleDrop(e, cell.id)}
+                onClick={() => droppedValue && feedback === null && handleRemoveItem(cell.id)}
+                className={`w-12 h-12 rounded-md border-2 border-dashed flex items-center justify-center transition-all touch-drop-zone ${
+                  droppedValue
+                    ? feedback === 'correct'
+                      ? 'bg-green-100 border-green-400'
+                      : feedback === 'incorrect'
+                      ? 'bg-red-100 border-red-400'
+                      : isOperator
+                      ? 'bg-orange-100 border-orange-400 cursor-pointer'
+                      : 'bg-blue-100 border-blue-400 cursor-pointer'
+                    : isOperator
+                    ? 'border-orange-400 bg-orange-50'
+                    : 'border-gray-400 bg-gray-50'
+                }`}
+              >
+                {droppedValue && (
+                  <span className="text-2xl font-semibold leading-none">{droppedValue}</span>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -411,8 +586,9 @@ export const MathGame: React.FC<MathGameProps> = ({ level, onComplete, onTimeUp,
     setCorrectAnswers(0);
     
     const selectedOperations = level.themeId.split(',').map(s => s.trim());
-    const mathProblems = generateMathProblems(selectedOperations, 8, level.difficultyId);
-    setProblems(mathProblems);
+    const gridCount = 8;
+    const gridProblems = Array.from({ length: gridCount }, () => generateMathGridProblem(selectedOperations, level.difficultyId));
+    setProblems(gridProblems);
   };
 
   const handleSolve = () => {
@@ -621,7 +797,9 @@ export const MathGame: React.FC<MathGameProps> = ({ level, onComplete, onTimeUp,
       <div className="flex-1 flex flex-col items-center">
       <div className="bg-white rounded-lg shadow-md p-8 w-full mb-6">
         <div className="text-3xl font-bold text-center mb-8 leading-relaxed flex items-center justify-center">
-          {renderEquation(currentProblem.equation, currentProblem.blanks)}
+          {currentProblem.mode === 'grid' && currentProblem.grid
+            ? renderGrid(currentProblem.grid, currentProblem.blanks)
+            : renderEquation(currentProblem.equation || '', currentProblem.blanks)}
         </div>
 
         {/* Numbers Row */}
@@ -697,12 +875,12 @@ export const MathGame: React.FC<MathGameProps> = ({ level, onComplete, onTimeUp,
                 <Check className="w-6 h-6 mr-2" />
               Правилно!
             </div>
-          ) : (
+            ) : (
               <div className="flex items-center justify-center">
                 <X className="w-6 h-6 mr-2" />
-                Грешно! Правилният отговор е {currentProblem.correctAnswer}.
-            </div>
-          )}
+                {currentProblem.mode === 'grid' ? 'Грешно! Попълнете правилно всички клетки.' : `Грешно! Правилният отговор е ${currentProblem.correctAnswer}.`}
+              </div>
+            )}
         </div>
       )}
     </div>
