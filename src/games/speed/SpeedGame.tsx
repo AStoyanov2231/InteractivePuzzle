@@ -7,11 +7,14 @@ import { Check, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { gameStatsService } from "@/services/gameStatsService";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { isPWAMode } from "@/utils/pwaUtils";
 
 interface SpeedGameProps {
   level: GameLevel;
   onComplete: () => void;
   onTimeUp: () => void;
+  onBackToSelection?: () => void;
+  onGameStateChange?: (isInCategorySelection: boolean) => void;
 }
 
 // Chronometer-style timer display (matches other games)
@@ -40,7 +43,7 @@ const Chronometer: React.FC<{ label?: string; seconds: number; hasStarted: boole
   );
 };
 
-export const SpeedGame: React.FC<SpeedGameProps> = ({ level, onComplete, onTimeUp }) => {
+export const SpeedGame: React.FC<SpeedGameProps> = ({ level, onComplete, onTimeUp, onBackToSelection, onGameStateChange }) => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [gameStarted, setGameStarted] = useState(false);
   const [gameEnded, setGameEnded] = useState(false);
@@ -51,6 +54,7 @@ export const SpeedGame: React.FC<SpeedGameProps> = ({ level, onComplete, onTimeU
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const { toast } = useToast();
   const isMobile = useIsMobile();
+  const isPWA = isPWAMode();
 
   // Game speed based on selected category
   const speed = selectedCategory === "slow" ? 2000 : 1000;
@@ -74,8 +78,8 @@ export const SpeedGame: React.FC<SpeedGameProps> = ({ level, onComplete, onTimeU
     }
     setGameEnded(true);
     
-    // Submit stats for single-player games
-    if (gameStatsService.isSinglePlayerMode()) {
+    // Submit stats for single-player games (but not in PWA mode)
+    if (gameStatsService.isSinglePlayerMode() && !isPWAMode()) {
       try {
         await gameStatsService.submitSpeedGameStats({
           correctAnswers,
@@ -123,6 +127,14 @@ export const SpeedGame: React.FC<SpeedGameProps> = ({ level, onComplete, onTimeU
     if (timerRef.current) {
       clearInterval(timerRef.current);
     }
+    
+    // In PWA mode, use the onBackToSelection prop if available
+    if (isPWA && onBackToSelection) {
+      onBackToSelection();
+      return;
+    }
+    
+    // Otherwise, reset the local state
     setSelectedCategory(null);
     setGameStarted(false);
     setGameEnded(false);
@@ -130,7 +142,11 @@ export const SpeedGame: React.FC<SpeedGameProps> = ({ level, onComplete, onTimeU
     setCorrectAnswers(0);
     setWrongAnswers(0);
     setTotalAttempts(0);
-  }, []);
+  }, [isPWA, onBackToSelection]);
+
+  const handleBackToSelection = useCallback(() => {
+    handleReset();
+  }, [handleReset]);
 
   useEffect(() => {
     return () => {
@@ -146,6 +162,13 @@ export const SpeedGame: React.FC<SpeedGameProps> = ({ level, onComplete, onTimeU
       startGame();
     }
   }, [selectedCategory, gameStarted, gameEnded, startGame]);
+
+  // Signal when we're in category selection vs gameplay
+  useEffect(() => {
+    if (onGameStateChange) {
+      onGameStateChange(!selectedCategory); // true when in category selection, false when in game
+    }
+  }, [selectedCategory, onGameStateChange]);
 
   if (gameEnded) {
     return (

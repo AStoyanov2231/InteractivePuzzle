@@ -3,6 +3,7 @@ import React from "react";
 import { Button } from "@/components/ui/button";
 import { Trophy, Home } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { isPWAMode } from "@/utils/pwaUtils";
 
 interface SpeedGameResultsProps {
   correctAnswers: number;
@@ -62,12 +63,18 @@ export const SpeedGameResults: React.FC<SpeedGameResultsProps> = ({
         </div>
         
                     <Button 
-              onClick={() => navigate('/')} 
+              onClick={() => {
+                if (isPWAMode()) {
+                  onPlayAgain(); // In PWA mode, just play again instead of going home
+                } else {
+                  navigate('/'); // Normal mode - go to home
+                }
+              }} 
               variant="outline" 
               className="w-full"
             >
               <Home className="w-4 h-4 mr-2" />
-              Към началото
+              {isPWAMode() ? 'Играй отново' : 'Към началото'}
             </Button>
       </div>
     </div>

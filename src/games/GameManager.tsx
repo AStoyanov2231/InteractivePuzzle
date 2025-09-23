@@ -13,13 +13,17 @@ interface GameManagerProps {
   level: GameLevel;
   onComplete: () => void;
   onTimeUp: () => void;
+  onBackToSelection?: () => void;
+  onGameStateChange?: (isInCategorySelection: boolean) => void;
 }
 
 export const GameManager: React.FC<GameManagerProps> = ({ 
   categoryId, 
   level, 
   onComplete, 
-  onTimeUp 
+  onTimeUp,
+  onBackToSelection,
+  onGameStateChange
 }) => {
   // Ensure we have a valid category ID
   const safeCategory = categoryId?.toLowerCase() || "";
@@ -45,7 +49,7 @@ export const GameManager: React.FC<GameManagerProps> = ({
       return <CompetitiveGame level={level} onComplete={onComplete} onTimeUp={onTimeUp} />;
     
     case "speed":
-      return <SpeedGame level={level} onComplete={onComplete} onTimeUp={onTimeUp} />;
+      return <SpeedGame level={level} onComplete={onComplete} onTimeUp={onTimeUp} onBackToSelection={onBackToSelection} onGameStateChange={onGameStateChange} />;
     
     default:
       return (

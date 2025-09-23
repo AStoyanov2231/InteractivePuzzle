@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { isPWAMode } from "@/utils/pwaUtils";
 
 interface RequireNameToggleProps {
 	className?: string;
@@ -17,6 +18,11 @@ export const RequireNameToggle: React.FC<RequireNameToggleProps> = ({ className 
 	useEffect(() => {
 		localStorage.setItem("requireUsernameForSolo", String(isRequired));
 	}, [isRequired]);
+
+	// Hide the toggle in PWA mode
+	if (isPWAMode()) {
+		return null;
+	}
 
 	return (
 		<div className={`flex items-center gap-2 bg-white/60 hover:bg-white/80 active:bg-white/90 backdrop-blur-sm border border-white/30 rounded-2xl px-3 py-2 shadow-lg transition-all duration-200 ${className}`} title="Изисквай име преди игра">

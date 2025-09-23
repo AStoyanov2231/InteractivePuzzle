@@ -9,6 +9,7 @@ import { FullscreenButton } from "@/components/FullscreenButton";
 import { RequireNameToggle } from "@/components/RequireNameToggle";
 import { UsernameDialog } from "@/components/UsernameDialog";
 import { GameLevel } from "@/types";
+import { isPWAMode } from "@/utils/pwaUtils";
 
 const Game = () => {
   const { categoryId, levelId } = useParams();
@@ -25,6 +26,7 @@ const Game = () => {
     const stored = localStorage.getItem('requireUsernameForSolo');
     return stored === null ? true : stored === 'true';
   });
+  const [isInCategorySelection, setIsInCategorySelection] = useState(false);
 
   useEffect(() => {
     if (categoryId && numericLevelId) {
@@ -72,7 +74,14 @@ const Game = () => {
   const handleBack = () => {
     // Clear username when going back
     localStorage.removeItem('currentPlayerName');
-    navigate("/");
+    // In PWA mode, for speed game, go back to category selection instead of main page
+    if (isPWAMode() && categoryId === 'speed') {
+      // Reset to category selection by clearing the level
+      navigate(`/game/speed/1`, { replace: true });
+      window.location.reload(); // Force reload to show category selection
+    } else {
+      navigate("/");
+    }
   };
 
   const handleGameComplete = () => {
@@ -81,6 +90,19 @@ const Game = () => {
 
   const handleTimeUp = () => {
     // Time is up
+  };
+
+  const handleBackToSelection = () => {
+    // This function can be used to reset game state and go back to category selection
+    // For speed game in PWA mode, this allows going back to speed selection
+    if (isPWAMode() && categoryId === 'speed') {
+      // Just force a refresh to reset the game state
+      window.location.reload();
+    }
+  };
+
+  const handleGameStateChange = (inCategorySelection: boolean) => {
+    setIsInCategorySelection(inCategorySelection);
   };
 
   if (loading) {
@@ -119,8 +141,8 @@ const Game = () => {
 
   const { level, category } = gameData;
 
-  // Show username dialog if required and not provided
-  if ((requireUsername && (showUsernameDialog || !username))) {
+  // Show username dialog if required and not provided (but skip in PWA mode)
+  if ((requireUsername && (showUsernameDialog || !username) && !isPWAMode())) {
     return (
       <>
         <div className="min-h-screen bg-gradient-to-br from-orange-400 via-orange-200 to-orange-200 flex items-center justify-center">
@@ -146,17 +168,20 @@ const Game = () => {
         <FullscreenButton />
       </div>
       
-      {/* Game Header - Fixed height for single viewport */}
+        {/* Game Header - Fixed height for single viewport */}
       <div className="flex justify-between items-center mb-4 h-16">
         <div className="flex items-center gap-3">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={handleBack}
-            className="rounded-full bg-white/20 hover:bg-white/30 text-gray-700 backdrop-blur-sm border border-white/20"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
+          {/* Hide back button in PWA mode for speed game category selection, but show during gameplay */}
+          {!(isPWAMode() && categoryId === 'speed' && isInCategorySelection) && (
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={handleBack}
+              className="rounded-full bg-white/20 hover:bg-white/30 text-gray-700 backdrop-blur-sm border border-white/20"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+          )}
           <div className="bg-white/60 backdrop-blur-sm px-4 py-2 rounded-xl shadow-sm border border-white/20">
             <h1 className="text-lg font-bold text-gray-800">{category?.name}</h1>
           </div>
@@ -174,6 +199,8 @@ const Game = () => {
               level={level} 
               onComplete={handleGameComplete} 
               onTimeUp={handleTimeUp}
+              onBackToSelection={handleBackToSelection}
+              onGameStateChange={handleGameStateChange}
             />
           </div>
         </div>
