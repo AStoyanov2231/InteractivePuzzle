@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Check, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { gameStatsService } from "@/services/gameStatsService";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface SpeedGameProps {
   level: GameLevel;
@@ -49,6 +50,7 @@ export const SpeedGame: React.FC<SpeedGameProps> = ({ level, onComplete, onTimeU
   const [totalAttempts, setTotalAttempts] = useState(0);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const { toast } = useToast();
+  const isMobile = useIsMobile();
 
   // Game speed based on selected category
   const speed = selectedCategory === "slow" ? 2000 : 1000;
@@ -159,29 +161,95 @@ export const SpeedGame: React.FC<SpeedGameProps> = ({ level, onComplete, onTimeU
 
   if (!selectedCategory) {
     return (
-      <div className="flex flex-col items-center justify-center w-full max-w-4xl mx-auto py-12">
-        <div className="bg-white rounded-lg shadow-xl p-8 text-center max-w-2xl w-full">
-          <h2 className="text-3xl font-bold text-gray-800 mb-6">Изберете скорост</h2>
+      <div className={`flex flex-col items-center justify-center w-full ${isMobile ? 'py-4 px-4' : 'max-w-4xl mx-auto py-12'}`}>
+        <div className={`bg-white rounded-lg shadow-xl text-center w-full ${isMobile ? 'p-4' : 'p-8 max-w-2xl'}`}>
+          <h2 className={`font-bold text-gray-800 mb-6 ${isMobile ? 'text-xl' : 'text-3xl'}`}>Изберете скорост</h2>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className={`grid gap-6 ${isMobile ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2'}`}>
             <button
               onClick={() => setSelectedCategory("slow")}
-              className="flex flex-col items-center p-6 rounded-xl border-2 border-gray-200 hover:border-gray-400 hover:bg-gray-50 transition-all duration-200 transform hover:scale-105"
+              className={`flex flex-col items-center rounded-xl border-2 border-gray-200 hover:border-gray-400 hover:bg-gray-50 transition-all duration-200 transform hover:scale-105 ${isMobile ? 'p-4' : 'p-6'}`}
             >
-              <div className="text-4xl mb-4 p-3 rounded-lg" style={{ backgroundColor: "#10B98120" }}>
+              <div className={`mb-4 p-3 rounded-lg ${isMobile ? 'text-3xl' : 'text-4xl'}`} style={{ backgroundColor: "#10B98120" }}>
                 🐌
               </div>
-              <span className="text-xl font-semibold text-gray-800">Бавно</span>
+              <span className={`font-semibold text-gray-800 ${isMobile ? 'text-lg' : 'text-xl'}`}>Бавно</span>
             </button>
             <button
               onClick={() => setSelectedCategory("fast")}
-              className="flex flex-col items-center p-6 rounded-xl border-2 border-gray-200 hover:border-gray-400 hover:bg-gray-50 transition-all duration-200 transform hover:scale-105"
+              className={`flex flex-col items-center rounded-xl border-2 border-gray-200 hover:border-gray-400 hover:bg-gray-50 transition-all duration-200 transform hover:scale-105 ${isMobile ? 'p-4' : 'p-6'}`}
             >
-              <div className="text-4xl mb-4 p-3 rounded-lg" style={{ backgroundColor: "#EF444420" }}>
+              <div className={`mb-4 p-3 rounded-lg ${isMobile ? 'text-3xl' : 'text-4xl'}`} style={{ backgroundColor: "#EF444420" }}>
                 🚀
               </div>
-              <span className="text-xl font-semibold text-gray-800">Бързо</span>
+              <span className={`font-semibold text-gray-800 ${isMobile ? 'text-lg' : 'text-xl'}`}>Бързо</span>
             </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (isMobile) {
+    return (
+      <div className="flex flex-col w-full h-full">
+        {/* MOBILE TOP STATS BAR */}
+        <div className="bg-white rounded-lg shadow-md p-3 mb-4">
+          <div className="flex items-center justify-between text-sm">
+            <div className="flex items-center gap-4">
+              <div className="text-center">
+                <div className="font-semibold text-green-600">{correctAnswers}</div>
+                <div className="text-xs text-gray-500">Верни</div>
+              </div>
+              <div className="text-center">
+                <div className="font-semibold text-red-600">{wrongAnswers}</div>
+                <div className="text-xs text-gray-500">Грешни</div>
+              </div>
+              <div className="text-center">
+                <div className="font-semibold">{totalAttempts}</div>
+                <div className="text-xs text-gray-500">Общо</div>
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="font-semibold text-lg">
+                {Math.floor(timeElapsed / 60).toString().padStart(2, '0')}:
+                {(timeElapsed % 60).toString().padStart(2, '0')}
+              </div>
+              <div className="text-xs text-gray-500">
+                {selectedCategory === "slow" ? "Бавно" : "Бързо"}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* MOBILE GAME AREA */}
+        <div className="flex-1 bg-white rounded-lg shadow-md p-4">
+          <div className="flex justify-center h-full">
+            <ColorMatchGame
+              speed={speed}
+              onCorrect={handleCorrectAnswer}
+              onIncorrect={handleWrongAnswer}
+              gameActive={!gameEnded}
+              difficulty={selectedCategory === "slow" ? "easy" : "hard"}
+            />
+          </div>
+        </div>
+
+        {/* MOBILE BOTTOM CONTROLS */}
+        <div className="bg-white rounded-lg shadow-md p-3 mt-4">
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={handleReset} className="flex-1">
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Отначало
+            </Button>
+            <Button 
+              variant="outline"
+              onClick={endGame}
+              className="flex-1 bg-green-100 hover:bg-green-200 border-green-300 text-green-700"
+            >
+              <Check className="w-4 h-4 mr-2" />
+              Завърши
+            </Button>
           </div>
         </div>
       </div>

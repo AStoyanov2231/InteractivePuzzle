@@ -32,6 +32,15 @@ const Index = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
+  // Auto-redirect to Speed game on mobile devices
+  useEffect(() => {
+    const isMobile = window.innerWidth <= 768;
+    if (isMobile) {
+      // Navigate directly to speed game with auto-start
+      navigate('/game/speed/1');
+    }
+  }, [navigate]);
+
   // Check if competitive game is active and load teams on component mount
   useEffect(() => {
     const storedTeams = localStorage.getItem('puzzleGameTeams');

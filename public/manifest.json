@@ -1,0 +1,32 @@
+{
+  "name": "Българска Платформа за Пъзели",
+  "short_name": "Пъзели BG",
+  "description": "Интерактивна платформа за пъзели на български език",
+  "start_url": "/InteractivePuzzle/",
+  "display": "standalone",
+  "background_color": "#fed7aa",
+  "theme_color": "#fb923c",
+  "orientation": "portrait",
+  "scope": "/InteractivePuzzle/",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "16x16 32x32 48x48",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "/favicon.ico",
+      "sizes": "192x192",
+      "type": "image/x-icon",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/favicon.ico",
+      "sizes": "512x512",
+      "type": "image/x-icon",
+      "purpose": "any"
+    }
+  ],
+  "categories": ["games", "education", "entertainment"],
+  "lang": "bg"
+}

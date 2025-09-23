@@ -15,7 +15,7 @@ interface QuizCategorySelectorProps {
 const quizCategories: Category[] = [
   { 
     id: "history", 
-    name: "История", 
+    name: "Спорт", 
     icon: "📜", 
     color: "#8B5CF6"
   },

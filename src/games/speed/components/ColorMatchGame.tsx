@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface ColorMatchGameProps {
   speed: number; // This should be 1000ms (1 second)
@@ -20,6 +21,7 @@ export const ColorMatchGame: React.FC<ColorMatchGameProps> = ({
   const [targetColor, setTargetColor] = useState<ColorOption>("green");
   const [squareColors, setSquareColors] = useState<ColorOption[]>(["green", "blue"]);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const isMobile = useIsMobile();
 
   const colors = {
     green: "#22c55e", // Tailwind green-500
@@ -110,10 +112,10 @@ export const ColorMatchGame: React.FC<ColorMatchGameProps> = ({
   const gridCols = isHard ? "grid-cols-3" : "grid-cols-2";
 
   return (
-    <div className="flex flex-col items-center w-full max-w-2xl">
-      <div className="w-full p-8 mb-8 bg-white rounded-2xl shadow-lg flex items-center justify-center">
+    <div className={`flex flex-col items-center w-full ${isMobile ? 'max-w-sm' : 'max-w-2xl'}`}>
+      <div className={`w-full bg-white rounded-2xl shadow-lg flex items-center justify-center ${isMobile ? 'p-4 mb-4' : 'p-8 mb-8'}`}>
         <div 
-          className="w-40 h-40 rounded-2xl flex items-center justify-center text-white text-2xl font-bold transition-all"
+          className={`rounded-2xl flex items-center justify-center text-white font-bold transition-all ${isMobile ? 'w-32 h-32 text-lg' : 'w-40 h-40 text-2xl'}`}
           style={{ 
             backgroundColor: colors[targetColor],
             boxShadow: `0 10px 15px -3px ${colors[targetColor]}40`
@@ -123,12 +125,12 @@ export const ColorMatchGame: React.FC<ColorMatchGameProps> = ({
         </div>
       </div>
       
-      <div className={`grid ${gridCols} gap-8 w-full`}>
+      <div className={`grid ${gridCols} w-full ${isMobile ? 'gap-4' : 'gap-8'}`}>
         {squareColors.map((color, index) => (
           <button
             key={index}
             onClick={() => handleColorClick(color)}
-            className="aspect-square rounded-3xl shadow-lg transform transition-all hover:scale-105 active:scale-95 focus:outline-none"
+            className={`aspect-square rounded-3xl shadow-lg transform transition-all hover:scale-105 active:scale-95 focus:outline-none ${isMobile ? 'touch-manipulation' : ''}`}
             style={{ 
               backgroundColor: colors[color],
               boxShadow: `0 10px 15px -3px ${colors[color]}40`
