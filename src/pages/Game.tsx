@@ -161,7 +161,7 @@ const Game = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-400 via-orange-200 to-orange-200 p-4 relative overflow-hidden">
+    <div className="h-screen w-screen bg-gradient-to-br from-orange-400 via-orange-200 to-orange-200 flex flex-col relative overflow-hidden">
       {/* Controls in top right corner */}
       <div className="fixed top-4 right-4 z-50 flex items-center gap-2">
         <RequireNameToggle />
@@ -169,7 +169,7 @@ const Game = () => {
       </div>
       
         {/* Game Header - Fixed height for single viewport */}
-      <div className="flex justify-between items-center mb-4 h-16">
+      <div className="flex justify-between items-center p-4 h-20 flex-shrink-0">
         <div className="flex items-center gap-3">
           {/* Hide back button in PWA mode for speed game category selection, but show during gameplay */}
           {!(isPWAMode() && categoryId === 'speed' && isInCategorySelection) && (
@@ -188,21 +188,18 @@ const Game = () => {
         </div>
       </div>
 
-      {/* Game Content Container - Calculated height for single viewport */}
-      <div className="bg-white/40 backdrop-blur-sm rounded-3xl shadow-xl border border-white/30 overflow-hidden" 
-           style={{ height: 'calc(100vh - 7rem)' }}>
-        <div className="h-full flex flex-col">
-          {/* Game Container - Independent scrollable area if needed */}
-          <div className="flex-1 bg-white/60 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-4 overflow-auto">
-            <GameManager 
-              categoryId={categoryId || ""} 
-              level={level} 
-              onComplete={handleGameComplete} 
-              onTimeUp={handleTimeUp}
-              onBackToSelection={handleBackToSelection}
-              onGameStateChange={handleGameStateChange}
-            />
-          </div>
+      {/* Game Content Container - Flex to fill remaining space */}
+      <div className="flex-1 bg-white/40 backdrop-blur-sm rounded-t-3xl shadow-xl border border-white/30 overflow-hidden mx-4 mb-4 min-h-0">
+        {/* Game Container - Fills available space */}
+        <div className="h-full bg-white/60 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-4 overflow-hidden flex flex-col">
+          <GameManager 
+            categoryId={categoryId || ""} 
+            level={level} 
+            onComplete={handleGameComplete} 
+            onTimeUp={handleTimeUp}
+            onBackToSelection={handleBackToSelection}
+            onGameStateChange={handleGameStateChange}
+          />
         </div>
       </div>
     </div>

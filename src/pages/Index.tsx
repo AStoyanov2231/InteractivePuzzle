@@ -195,17 +195,19 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-orange-200 py-4 px-6 flex flex-col relative">
+    <div className="h-screen w-screen bg-orange-200 flex flex-col relative overflow-hidden">
       {/* Controls in top right corner */}
       <div className="fixed top-4 right-4 z-50 flex items-center gap-2">
         <RequireNameToggle />
         <FullscreenButton />
       </div>
       
-      <Header />
+      <div className="flex-shrink-0 px-6 pt-4">
+        <Header />
+      </div>
       <Toaster />
       
-      <main className="flex-1 flex flex-row items-start justify-center mt-4 w-full px-4 gap-6">
+      <main className="flex-1 flex flex-row items-start justify-center w-full px-4 gap-6 overflow-hidden min-h-0">
         {/* Team Control Panel */}
         <div className="flex flex-col w-80 space-y-4 h-full">
           <Card className="bg-white/20 backdrop-blur-xl border border-white/30 shadow-2xl shadow-black/10 flex-1 rounded-3xl overflow-hidden">
