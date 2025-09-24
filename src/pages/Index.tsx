@@ -13,7 +13,6 @@ import { Toaster } from "@/components/ui/toaster";
 import { FullscreenButton } from "@/components/FullscreenButton";
 import { RequireNameToggle } from "@/components/RequireNameToggle";
 import { useToast } from "@/hooks/use-toast";
-import { isMobilePWALandscape } from "@/utils/pwaUtils";
 
 interface Team {
   id: string;
@@ -191,43 +190,6 @@ const Index = () => {
             />
           )}
         </main>
-      </div>
-    );
-  }
-
-  // Check if we should use landscape layout
-  const isLandscapeMode = isMobilePWALandscape();
-
-  if (isLandscapeMode) {
-    // PWA Landscape Layout for main menu
-    return (
-      <div className="pwa-landscape-container bg-orange-200">
-        {/* Header and controls */}
-        <div className="pwa-landscape-sidebar bg-white/20 backdrop-blur-sm border-r border-white/30 p-3 flex flex-col">
-          <div className="flex flex-col gap-2 mb-4">
-            <RequireNameToggle />
-            <FullscreenButton />
-          </div>
-          <Header />
-        </div>
-
-        {/* Main content area */}
-        <div className="pwa-landscape-main overflow-y-auto">
-          <Toaster />
-          <main className="h-full p-4">
-            {/* Puzzle Categories Grid - Optimized for landscape */}
-            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 h-full auto-rows-min">
-              {puzzleCategories.map((category) => (
-                <PuzzleCard
-                  key={category.id}
-                  category={category}
-                  onClick={() => handleCategoryClick(category)}
-                  className="h-auto"
-                />
-              ))}
-            </div>
-          </main>
-        </div>
       </div>
     );
   }

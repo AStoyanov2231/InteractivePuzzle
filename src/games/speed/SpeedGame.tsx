@@ -8,7 +8,6 @@ import { useToast } from "@/hooks/use-toast";
 import { gameStatsService } from "@/services/gameStatsService";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { isPWAMode } from "@/utils/pwaUtils";
-import { CompactChronometer } from "@/components/CompactChronometer";
 
 interface SpeedGameProps {
   level: GameLevel;
@@ -16,7 +15,6 @@ interface SpeedGameProps {
   onTimeUp: () => void;
   onBackToSelection?: () => void;
   onGameStateChange?: (isInCategorySelection: boolean) => void;
-  isLandscapeMode?: boolean;
 }
 
 // Chronometer-style timer display (matches other games)
@@ -45,7 +43,7 @@ const Chronometer: React.FC<{ label?: string; seconds: number; hasStarted: boole
   );
 };
 
-export const SpeedGame: React.FC<SpeedGameProps> = ({ level, onComplete, onTimeUp, onBackToSelection, onGameStateChange, isLandscapeMode = false }) => {
+export const SpeedGame: React.FC<SpeedGameProps> = ({ level, onComplete, onTimeUp, onBackToSelection, onGameStateChange }) => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [gameStarted, setGameStarted] = useState(false);
   const [gameEnded, setGameEnded] = useState(false);
@@ -287,11 +285,7 @@ export const SpeedGame: React.FC<SpeedGameProps> = ({ level, onComplete, onTimeU
       <aside className="w-[220px] shrink-0 pl-4">
         <div className="sticky top-6">
           <div className="bg-white rounded-2xl shadow-md p-4 mb-4">
-            {isLandscapeMode ? (
-              <CompactChronometer seconds={timeElapsed} hasStarted={gameStarted} />
-            ) : (
-              <Chronometer seconds={timeElapsed} hasStarted={gameStarted} />
-            )}
+            <Chronometer seconds={timeElapsed} hasStarted={gameStarted} />
           </div>
           <div className="bg-white rounded-2xl shadow-md p-6 mb-4">
             <div className="space-y-4 text-lg">

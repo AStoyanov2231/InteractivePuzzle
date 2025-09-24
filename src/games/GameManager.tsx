@@ -7,7 +7,6 @@ import { WordGame } from "./words/WordGame";
 import { QuizGame } from "./quiz/QuizGame";
 import { CompetitiveGame } from "./competitive/CompetitiveGame";
 import { SpeedGame } from "./speed/SpeedGame";
-import { isMobilePWALandscape } from "@/utils/pwaUtils";
 
 interface GameManagerProps {
   categoryId: string;
@@ -28,9 +27,6 @@ export const GameManager: React.FC<GameManagerProps> = ({
 }) => {
   // Ensure we have a valid category ID
   const safeCategory = categoryId?.toLowerCase() || "";
-  
-  // Check if we're in landscape mode for PWA
-  const isLandscapeMode = isMobilePWALandscape();
   
   // Render the appropriate game component based on the category
   switch (safeCategory) {
@@ -53,7 +49,7 @@ export const GameManager: React.FC<GameManagerProps> = ({
       return <CompetitiveGame level={level} onComplete={onComplete} onTimeUp={onTimeUp} />;
     
     case "speed":
-      return <SpeedGame level={level} onComplete={onComplete} onTimeUp={onTimeUp} onBackToSelection={onBackToSelection} onGameStateChange={onGameStateChange} isLandscapeMode={isLandscapeMode} />;
+      return <SpeedGame level={level} onComplete={onComplete} onTimeUp={onTimeUp} onBackToSelection={onBackToSelection} onGameStateChange={onGameStateChange} />;
     
     default:
       return (

@@ -81,25 +81,6 @@
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
   }
-
-  /* PWA Mobile Landscape Optimizations */
-  @media (display-mode: standalone) and (orientation: landscape) {
-    html, body, #root {
-      height: 100vh;
-      overflow: hidden;
-      position: fixed;
-      width: 100vw;
-      touch-action: none;
-      -webkit-overflow-scrolling: none;
-      overscroll-behavior: none;
-    }
-    
-    body {
-      min-height: 100vh;
-      max-height: 100vh;
-      padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
-    }
-  }
   
   /* Improve text clarity for UI components */
   button, input, label, .dialog-content {
@@ -142,32 +123,6 @@ input, textarea, [contenteditable="true"], .allow-select {
 @layer components {
   .puzzle-card {
     @apply flex items-center gap-3 p-5 bg-white rounded-xl border border-gray-100/50 shadow-sm transition-all duration-300 cursor-pointer hover:shadow-md hover:-translate-y-0.5 hover:border-gray-200/50 relative mx-1 my-0.5;
-  }
-
-  /* PWA Landscape Layout Classes */
-  .pwa-landscape-container {
-    @apply flex flex-row h-screen w-screen overflow-hidden;
-  }
-  
-  .pwa-landscape-sidebar {
-    @apply w-80 flex-shrink-0 overflow-y-auto h-full;
-  }
-  
-  .pwa-landscape-main {
-    @apply flex-1 flex flex-col overflow-hidden;
-  }
-  
-  .pwa-landscape-game-area {
-    @apply flex-1 flex items-center justify-center overflow-hidden;
-  }
-  
-  /* Compact chronometer for landscape */
-  .chronometer-compact {
-    @apply w-20 h-20 text-sm;
-  }
-  
-  .chronometer-compact .chronometer-display {
-    @apply text-base font-bold;
   }
   
   .puzzle-icon {
