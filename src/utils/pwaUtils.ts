@@ -30,3 +30,25 @@ export const isMobileDevice = (): boolean => {
 export const isMobilePWA = (): boolean => {
   return isPWAMode() && isMobileDevice();
 };
+
+/**
+ * Checks if app is running as PWA in landscape mode on mobile
+ * @returns {boolean} True if mobile PWA in landscape, false otherwise
+ */
+export const isMobilePWALandscape = (): boolean => {
+  return isMobilePWA() && 
+         window.matchMedia('(orientation: landscape)').matches &&
+         window.innerHeight <= 500; // Typical mobile landscape height threshold
+};
+
+/**
+ * Gets the viewport height accounting for PWA status bar and safe areas
+ * @returns {number} Available viewport height in pixels
+ */
+export const getAvailableViewportHeight = (): number => {
+  if (isMobilePWA()) {
+    // Account for PWA chrome and safe areas
+    return window.innerHeight - (window.screen.height - window.innerHeight);
+  }
+  return window.innerHeight;
+};

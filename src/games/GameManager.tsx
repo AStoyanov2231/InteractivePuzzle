@@ -7,6 +7,7 @@ import { WordGame } from "./words/WordGame";
 import { QuizGame } from "./quiz/QuizGame";
 import { CompetitiveGame } from "./competitive/CompetitiveGame";
 import { SpeedGame } from "./speed/SpeedGame";
+import { isMobilePWALandscape } from "@/utils/pwaUtils";
 
 interface GameManagerProps {
   categoryId: string;
@@ -28,28 +29,31 @@ export const GameManager: React.FC<GameManagerProps> = ({
   // Ensure we have a valid category ID
   const safeCategory = categoryId?.toLowerCase() || "";
   
+  // Check if we're in landscape mode for PWA
+  const isLandscapeMode = isMobilePWALandscape();
+  
   // Render the appropriate game component based on the category
   switch (safeCategory) {
     case "memory":
-      return <MemoryGame level={level} onComplete={onComplete} onTimeUp={onTimeUp} />;
+      return <MemoryGame level={level} onComplete={onComplete} onTimeUp={onTimeUp} isLandscapeMode={isLandscapeMode} />;
     
     case "logic":
-      return <LogicGame key={level.id} level={level} onComplete={onComplete} onTimeUp={onTimeUp} />;
+      return <LogicGame key={level.id} level={level} onComplete={onComplete} onTimeUp={onTimeUp} isLandscapeMode={isLandscapeMode} />;
     
     case "math":
-      return <MathGame level={level} onComplete={onComplete} onTimeUp={onTimeUp} />;
+      return <MathGame level={level} onComplete={onComplete} onTimeUp={onTimeUp} isLandscapeMode={isLandscapeMode} />;
     
     case "words":
-      return <WordGame level={level} onComplete={onComplete} onTimeUp={onTimeUp} />;
+      return <WordGame level={level} onComplete={onComplete} onTimeUp={onTimeUp} isLandscapeMode={isLandscapeMode} />;
     
     case "quiz":
-      return <QuizGame level={level} onComplete={onComplete} onTimeUp={onTimeUp} />;
+      return <QuizGame level={level} onComplete={onComplete} onTimeUp={onTimeUp} isLandscapeMode={isLandscapeMode} />;
     
     case "competitive":
-      return <CompetitiveGame level={level} onComplete={onComplete} onTimeUp={onTimeUp} />;
+      return <CompetitiveGame level={level} onComplete={onComplete} onTimeUp={onTimeUp} isLandscapeMode={isLandscapeMode} />;
     
     case "speed":
-      return <SpeedGame level={level} onComplete={onComplete} onTimeUp={onTimeUp} onBackToSelection={onBackToSelection} onGameStateChange={onGameStateChange} />;
+      return <SpeedGame level={level} onComplete={onComplete} onTimeUp={onTimeUp} onBackToSelection={onBackToSelection} onGameStateChange={onGameStateChange} isLandscapeMode={isLandscapeMode} />;
     
     default:
       return (

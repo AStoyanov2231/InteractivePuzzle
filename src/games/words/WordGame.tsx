@@ -7,11 +7,13 @@ import { useGameTimer } from "@/hooks/useGameTimer";
 import { gameStatsService } from "@/services/gameStatsService";
 import { TimeUpScreen } from "@/components/TimeUpScreen";
 import { wordBanks } from "@/games/words/wordBanks";
+import { CompactChronometer } from "@/components/CompactChronometer";
 
 interface WordGameProps {
   level: GameLevel;
   onComplete: () => void;
   onTimeUp: () => void;
+  isLandscapeMode?: boolean;
 }
 
 interface DragItem {
@@ -156,7 +158,7 @@ const wordCategories = [
   }
 ];
 
-export const WordGame: React.FC<WordGameProps> = ({ level, onComplete, onTimeUp }) => {
+export const WordGame: React.FC<WordGameProps> = ({ level, onComplete, onTimeUp, isLandscapeMode = false }) => {
   const navigate = useNavigate();
   
   // Always start without category selected to force category picker
@@ -688,7 +690,11 @@ export const WordGame: React.FC<WordGameProps> = ({ level, onComplete, onTimeUp 
         <aside className="w-[220px] shrink-0 pl-4" data-testid="left-sidebar">
           <div className="sticky top-6">
           <div className="bg-white rounded-2xl shadow-md p-4 mb-4" data-testid="timer-card">
-            <Chronometer seconds={timeLeft} hasStarted={hasStarted} />
+            {isLandscapeMode ? (
+              <CompactChronometer seconds={timeLeft} hasStarted={hasStarted} />
+            ) : (
+              <Chronometer seconds={timeLeft} hasStarted={hasStarted} />
+            )}
           </div>
           <div className="bg-white rounded-2xl shadow-md p-6 mb-4" data-testid="stats-card">
             <div className="space-y-4 text-lg">

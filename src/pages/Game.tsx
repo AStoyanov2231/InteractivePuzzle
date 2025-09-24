@@ -9,7 +9,8 @@ import { FullscreenButton } from "@/components/FullscreenButton";
 import { RequireNameToggle } from "@/components/RequireNameToggle";
 import { UsernameDialog } from "@/components/UsernameDialog";
 import { GameLevel } from "@/types";
-import { isPWAMode } from "@/utils/pwaUtils";
+import { isPWAMode, isMobilePWALandscape, getAvailableViewportHeight } from "@/utils/pwaUtils";
+import { CompactChronometer } from "@/components/CompactChronometer";
 
 const Game = () => {
   const { categoryId, levelId } = useParams();
@@ -160,8 +161,66 @@ const Game = () => {
     );
   }
 
+  // Check if we should use landscape layout
+  const isLandscapeMode = isMobilePWALandscape();
+  const viewportHeight = getAvailableViewportHeight();
+
+  if (isLandscapeMode) {
+    // PWA Landscape Layout
+    return (
+      <div className="pwa-landscape-container bg-gradient-to-br from-orange-400 via-orange-200 to-orange-200">
+        {/* Left sidebar with controls and info */}
+        <div className="pwa-landscape-sidebar bg-white/20 backdrop-blur-sm border-r border-white/30 p-3 flex flex-col">
+          {/* Header area */}
+          <div className="flex flex-col gap-2 mb-4">
+            {!(isPWAMode() && categoryId === 'speed' && isInCategorySelection) && (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={handleBack}
+                className="self-start rounded-lg bg-white/20 hover:bg-white/30 text-gray-700 backdrop-blur-sm border border-white/20"
+              >
+                <ArrowLeft className="h-4 w-4 mr-1" />
+                Назад
+              </Button>
+            )}
+            <div className="bg-white/60 backdrop-blur-sm px-3 py-2 rounded-lg shadow-sm border border-white/20">
+              <h1 className="text-sm font-bold text-gray-800 text-center">{category?.name}</h1>
+            </div>
+          </div>
+
+          {/* Controls */}
+          <div className="flex flex-col gap-2 mb-4">
+            <RequireNameToggle className="text-xs" />
+            <FullscreenButton className="self-start" />
+          </div>
+
+          {/* Spacer */}
+          <div className="flex-1" />
+        </div>
+
+        {/* Main game area */}
+        <div className="pwa-landscape-main">
+          <div className="pwa-landscape-game-area bg-white/40 backdrop-blur-sm m-2 rounded-2xl shadow-xl border border-white/30">
+            <div className="h-full w-full p-3 overflow-hidden">
+              <GameManager 
+                categoryId={categoryId || ""} 
+                level={level} 
+                onComplete={handleGameComplete} 
+                onTimeUp={handleTimeUp}
+                onBackToSelection={handleBackToSelection}
+                onGameStateChange={handleGameStateChange}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Standard Portrait Layout
   return (
-    <div className="h-screen w-screen bg-gradient-to-br from-orange-400 via-orange-200 to-orange-200 flex flex-col relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-orange-400 via-orange-200 to-orange-200 p-4 relative overflow-hidden">
       {/* Controls in top right corner */}
       <div className="fixed top-4 right-4 z-50 flex items-center gap-2">
         <RequireNameToggle />
@@ -169,7 +228,7 @@ const Game = () => {
       </div>
       
         {/* Game Header - Fixed height for single viewport */}
-      <div className="flex justify-between items-center p-4 h-20 flex-shrink-0">
+      <div className="flex justify-between items-center mb-4 h-16">
         <div className="flex items-center gap-3">
           {/* Hide back button in PWA mode for speed game category selection, but show during gameplay */}
           {!(isPWAMode() && categoryId === 'speed' && isInCategorySelection) && (
@@ -188,18 +247,21 @@ const Game = () => {
         </div>
       </div>
 
-      {/* Game Content Container - Flex to fill remaining space */}
-      <div className="flex-1 bg-white/40 backdrop-blur-sm rounded-t-3xl shadow-xl border border-white/30 overflow-hidden mx-4 mb-4 min-h-0">
-        {/* Game Container - Fills available space */}
-        <div className="h-full bg-white/60 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-4 overflow-hidden flex flex-col">
-          <GameManager 
-            categoryId={categoryId || ""} 
-            level={level} 
-            onComplete={handleGameComplete} 
-            onTimeUp={handleTimeUp}
-            onBackToSelection={handleBackToSelection}
-            onGameStateChange={handleGameStateChange}
-          />
+      {/* Game Content Container - Calculated height for single viewport */}
+      <div className="bg-white/40 backdrop-blur-sm rounded-3xl shadow-xl border border-white/30 overflow-hidden" 
+           style={{ height: 'calc(100vh - 7rem)' }}>
+        <div className="h-full flex flex-col">
+          {/* Game Container - Independent scrollable area if needed */}
+          <div className="flex-1 bg-white/60 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 p-4 overflow-auto">
+            <GameManager 
+              categoryId={categoryId || ""} 
+              level={level} 
+              onComplete={handleGameComplete} 
+              onTimeUp={handleTimeUp}
+              onBackToSelection={handleBackToSelection}
+              onGameStateChange={handleGameStateChange}
+            />
+          </div>
         </div>
       </div>
     </div>

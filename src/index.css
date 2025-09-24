@@ -74,13 +74,31 @@
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
     font-family: 'Roboto', sans-serif;
-    height: 100vh;
-    width: 100vw;
-    overflow: hidden;
-    position: fixed;
+    min-height: 100vh;
+    min-width: 100vw;
+    overflow-x: hidden;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
+  }
+
+  /* PWA Mobile Landscape Optimizations */
+  @media (display-mode: standalone) and (orientation: landscape) and (max-height: 500px) {
+    html, body, #root {
+      height: 100vh;
+      overflow: hidden;
+      position: fixed;
+      width: 100vw;
+      touch-action: none;
+      -webkit-overflow-scrolling: none;
+      overscroll-behavior: none;
+    }
+    
+    body {
+      min-height: 100vh;
+      max-height: 100vh;
+      padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    }
   }
   
   /* Improve text clarity for UI components */
@@ -112,69 +130,6 @@ html, body, #root {
   -ms-user-select: none;
   user-select: none;
   -webkit-touch-callout: none; /* Disable callout on iOS */
-  height: 100vh;
-  width: 100vw;
-  overflow: hidden;
-  position: relative;
-}
-
-/* PWA Single Viewport Constraints */
-#root {
-  display: flex;
-  flex-direction: column;
-}
-
-/* iPhone 13 Pro and above optimizations */
-@media screen and (min-width: 390px) and (min-height: 844px) {
-  body, html, #root {
-    height: 100vh;
-    max-height: 100vh;
-    overflow: hidden;
-  }
-}
-
-/* Prevent pull-to-refresh and overscroll */
-body {
-  overscroll-behavior: none;
-  -webkit-overflow-scrolling: touch;
-  touch-action: pan-x pan-y;
-}
-
-/* Prevent elastic scrolling on iOS */
-.no-scroll {
-  position: fixed;
-  overflow: hidden;
-  width: 100%;
-  height: 100%;
-}
-
-/* iOS Safari specific fixes for PWA */
-@supports (-webkit-touch-callout: none) {
-  body {
-    height: -webkit-fill-available;
-  }
-  
-  #root {
-    height: -webkit-fill-available;
-  }
-}
-
-/* Additional iOS PWA viewport fixes */
-@media screen and (orientation: portrait) {
-  body, html, #root {
-    height: 100vh;
-    height: -webkit-fill-available;
-  }
-}
-
-/* Prevent rubber band scrolling */
-html {
-  overscroll-behavior: none;
-}
-
-/* Prevent zoom on double tap */
-* {
-  touch-action: manipulation;
 }
 
 /* Allow text selection in inputs, textareas, editable areas, or elements marked to allow */
@@ -187,6 +142,32 @@ input, textarea, [contenteditable="true"], .allow-select {
 @layer components {
   .puzzle-card {
     @apply flex items-center gap-3 p-5 bg-white rounded-xl border border-gray-100/50 shadow-sm transition-all duration-300 cursor-pointer hover:shadow-md hover:-translate-y-0.5 hover:border-gray-200/50 relative mx-1 my-0.5;
+  }
+
+  /* PWA Landscape Layout Classes */
+  .pwa-landscape-container {
+    @apply flex flex-row h-screen w-screen overflow-hidden;
+  }
+  
+  .pwa-landscape-sidebar {
+    @apply w-80 flex-shrink-0 overflow-y-auto h-full;
+  }
+  
+  .pwa-landscape-main {
+    @apply flex-1 flex flex-col overflow-hidden;
+  }
+  
+  .pwa-landscape-game-area {
+    @apply flex-1 flex items-center justify-center overflow-hidden;
+  }
+  
+  /* Compact chronometer for landscape */
+  .chronometer-compact {
+    @apply w-20 h-20 text-sm;
+  }
+  
+  .chronometer-compact .chronometer-display {
+    @apply text-base font-bold;
   }
   
   .puzzle-icon {
