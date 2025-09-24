@@ -36,9 +36,9 @@ export const isMobilePWA = (): boolean => {
  * @returns {boolean} True if mobile PWA in landscape, false otherwise
  */
 export const isMobilePWALandscape = (): boolean => {
-  return isMobilePWA() && 
-         window.matchMedia('(orientation: landscape)').matches &&
-         window.innerHeight <= 500; // Typical mobile landscape height threshold
+  return isPWAMode() && 
+         isMobileDevice() &&
+         window.matchMedia('(orientation: landscape)').matches;
 };
 
 /**

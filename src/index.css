@@ -83,7 +83,7 @@
   }
 
   /* PWA Mobile Landscape Optimizations */
-  @media (display-mode: standalone) and (orientation: landscape) and (max-height: 500px) {
+  @media (display-mode: standalone) and (orientation: landscape) {
     html, body, #root {
       height: 100vh;
       overflow: hidden;

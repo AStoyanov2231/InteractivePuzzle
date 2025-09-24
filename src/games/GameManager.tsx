@@ -35,22 +35,22 @@ export const GameManager: React.FC<GameManagerProps> = ({
   // Render the appropriate game component based on the category
   switch (safeCategory) {
     case "memory":
-      return <MemoryGame level={level} onComplete={onComplete} onTimeUp={onTimeUp} isLandscapeMode={isLandscapeMode} />;
+      return <MemoryGame level={level} onComplete={onComplete} onTimeUp={onTimeUp} />;
     
     case "logic":
-      return <LogicGame key={level.id} level={level} onComplete={onComplete} onTimeUp={onTimeUp} isLandscapeMode={isLandscapeMode} />;
+      return <LogicGame key={level.id} level={level} onComplete={onComplete} onTimeUp={onTimeUp} />;
     
     case "math":
-      return <MathGame level={level} onComplete={onComplete} onTimeUp={onTimeUp} isLandscapeMode={isLandscapeMode} />;
+      return <MathGame level={level} onComplete={onComplete} onTimeUp={onTimeUp} />;
     
     case "words":
-      return <WordGame level={level} onComplete={onComplete} onTimeUp={onTimeUp} isLandscapeMode={isLandscapeMode} />;
+      return <WordGame level={level} onComplete={onComplete} onTimeUp={onTimeUp} />;
     
     case "quiz":
-      return <QuizGame level={level} onComplete={onComplete} onTimeUp={onTimeUp} isLandscapeMode={isLandscapeMode} />;
+      return <QuizGame level={level} onComplete={onComplete} onTimeUp={onTimeUp} />;
     
     case "competitive":
-      return <CompetitiveGame level={level} onComplete={onComplete} onTimeUp={onTimeUp} isLandscapeMode={isLandscapeMode} />;
+      return <CompetitiveGame level={level} onComplete={onComplete} onTimeUp={onTimeUp} />;
     
     case "speed":
       return <SpeedGame level={level} onComplete={onComplete} onTimeUp={onTimeUp} onBackToSelection={onBackToSelection} onGameStateChange={onGameStateChange} isLandscapeMode={isLandscapeMode} />;
