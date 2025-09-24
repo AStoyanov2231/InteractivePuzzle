@@ -6,7 +6,7 @@
   "display": "standalone",
   "background_color": "#fed7aa",
   "theme_color": "#fb923c",
-  "orientation": "portrait",
+  "orientation": "any",
   "scope": "/InteractivePuzzle/",
   "icons": [
     {
