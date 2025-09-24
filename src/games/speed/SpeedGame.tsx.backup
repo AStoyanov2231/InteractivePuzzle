@@ -55,13 +55,9 @@ export const SpeedGame: React.FC<SpeedGameProps> = ({ level, onComplete, onTimeU
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const isPWA = isPWAMode();
-  const [durationSeconds, setDurationSeconds] = useState<number>(60);
-  const [switchSpeedSec, setSwitchSpeedSec] = useState<number>(1.0);
-  const gameEndTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const startTimestampRef = useRef<number | null>(null);
 
-  // Switch speed (ms) from slider
-  const speed = Math.round(switchSpeedSec * 1000);
+  // Game speed based on selected category
+  const speed = selectedCategory === "slow" ? 2000 : 1000;
 
   const startGame = useCallback(() => {
     setGameStarted(true);
@@ -71,40 +67,15 @@ export const SpeedGame: React.FC<SpeedGameProps> = ({ level, onComplete, onTimeU
     setTotalAttempts(0);
 
     // Start stopwatch that counts up
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-    }
-    startTimestampRef.current = Date.now();
     timerRef.current = setInterval(() => {
-      if (startTimestampRef.current !== null) {
-        const seconds = Math.floor((Date.now() - startTimestampRef.current) / 1000);
-        setTimeElapsed(seconds);
-      }
-    }, 200);
-    
-    // Schedule automatic game end based on selected duration
-    if (gameEndTimeoutRef.current) {
-      clearTimeout(gameEndTimeoutRef.current);
-    }
-    gameEndTimeoutRef.current = setTimeout(() => {
-      if (typeof onTimeUp === "function") onTimeUp();
-      endGameRef.current?.();
-    }, durationSeconds * 1000);
-  }, [durationSeconds, onTimeUp]);
+      setTimeElapsed(prev => prev + 1); // Count up instead of down
+    }, 1000);
+  }, []);
 
   const endGame = useCallback(async () => {
     if (timerRef.current) {
       clearInterval(timerRef.current);
     }
-    if (gameEndTimeoutRef.current) {
-      clearTimeout(gameEndTimeoutRef.current);
-      gameEndTimeoutRef.current = null;
-    }
-    if (startTimestampRef.current !== null) {
-      const finalSeconds = Math.floor((Date.now() - startTimestampRef.current) / 1000);
-      setTimeElapsed(finalSeconds);
-    }
-    startTimestampRef.current = null;
     setGameEnded(true);
     
     // Submit stats for single-player games (but not in PWA mode)
@@ -123,8 +94,6 @@ export const SpeedGame: React.FC<SpeedGameProps> = ({ level, onComplete, onTimeU
     
     onComplete();
   }, [onComplete, correctAnswers, wrongAnswers, timeElapsed]);
-  const endGameRef = useRef(endGame);
-  useEffect(() => { endGameRef.current = endGame; }, [endGame]);
 
   const handleCorrectAnswer = useCallback(() => {
     setCorrectAnswers(prev => prev + 1);
@@ -158,10 +127,6 @@ export const SpeedGame: React.FC<SpeedGameProps> = ({ level, onComplete, onTimeU
     if (timerRef.current) {
       clearInterval(timerRef.current);
     }
-    if (gameEndTimeoutRef.current) {
-      clearTimeout(gameEndTimeoutRef.current);
-    }
-    startTimestampRef.current = null;
     
     // In PWA mode, use the onBackToSelection prop if available
     if (isPWA && onBackToSelection) {
@@ -188,10 +153,6 @@ export const SpeedGame: React.FC<SpeedGameProps> = ({ level, onComplete, onTimeU
       if (timerRef.current) {
         clearInterval(timerRef.current);
       }
-      if (gameEndTimeoutRef.current) {
-        clearTimeout(gameEndTimeoutRef.current);
-      }
-      startTimestampRef.current = null;
     };
   }, []);
 
@@ -208,8 +169,6 @@ export const SpeedGame: React.FC<SpeedGameProps> = ({ level, onComplete, onTimeU
       onGameStateChange(!selectedCategory); // true when in category selection, false when in game
     }
   }, [selectedCategory, onGameStateChange]);
-
-  // Scheduling moved to startGame to avoid rescheduling during gameplay
 
   if (gameEnded) {
     return (
@@ -248,45 +207,6 @@ export const SpeedGame: React.FC<SpeedGameProps> = ({ level, onComplete, onTimeU
               </div>
               <span className={`font-semibold text-gray-800 ${isMobile ? 'text-lg' : 'text-xl'}`}>Бързо</span>
             </button>
-          </div>
-          <div className="mt-8 space-y-6 text-left">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Продължителност: <span className="font-semibold">{durationSeconds} сек</span>
-              </label>
-              <input
-                type="range"
-                min={30}
-                max={90}
-                step={5}
-                value={durationSeconds}
-                onChange={(e) => setDurationSeconds(Number(e.target.value))}
-                className="w-full accent-green-600"
-              />
-              <div className="flex justify-between text-xs text-gray-500 mt-1">
-                <span>30s</span>
-                <span>90s</span>
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Скорост на смяна: <span className="font-semibold">{switchSpeedSec.toFixed(1)} сек</span>
-              </label>
-              <input
-                type="range"
-                min={0.5}
-                max={1.5}
-                step={0.1}
-                value={switchSpeedSec}
-                onChange={(e) => setSwitchSpeedSec(Number(e.target.value))}
-                className="w-full accent-green-600"
-              />
-              <div className="flex justify-between text-xs text-gray-500 mt-1">
-                <span>0.5s</span>
-                <span>1.5s</span>
-              </div>
-            </div>
           </div>
         </div>
       </div>
