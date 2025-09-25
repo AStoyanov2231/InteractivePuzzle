@@ -719,12 +719,12 @@ export const WordGame: React.FC<WordGameProps> = ({ level, onComplete, onTimeUp 
                 Провери
               </Button>
             )}
-            <Button variant="outline" onClick={handleSolve} className="w-full" data-testid="solve-button">🧠 Реши</Button>
+            {/* <Button variant="outline" onClick={handleSolve} className="w-full" data-testid="solve-button">🧠 Реши</Button> */}
             <Button variant="outline" onClick={handleResetGame} className="w-full" data-testid="reset-button">
               <RefreshCw className="w-4 h-4 mr-2" />
               Започни отначало
             </Button>
-            <Button 
+            {/* <Button 
               variant="outline" 
               onClick={async () => {
                 stopTimer();
@@ -747,7 +747,7 @@ export const WordGame: React.FC<WordGameProps> = ({ level, onComplete, onTimeUp 
             >
               <Check className="w-4 h-4 mr-2" />
               Завърши играта
-            </Button>
+            </Button> */}
           </div>
           </div>
         </aside>

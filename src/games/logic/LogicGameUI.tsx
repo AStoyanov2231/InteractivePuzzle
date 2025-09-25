@@ -103,7 +103,7 @@ export const LogicGameUI = forwardRef<HTMLDivElement, LogicGameUIProps>(({
                 <span className="font-medium">Рестартирай</span>
               </button>
             )}
-
+{/* <!-- End game button -->
             {!isCompleted && (
               <Button 
                 variant="outline"
@@ -127,7 +127,7 @@ export const LogicGameUI = forwardRef<HTMLDivElement, LogicGameUIProps>(({
                 <Check className="w-4 h-4 mr-2" />
                 Завърши играта
               </Button>
-            )}
+            )} */}
 
             {isCompleted && !showCompletionScreen && (
               <div className="flex flex-col gap-3">

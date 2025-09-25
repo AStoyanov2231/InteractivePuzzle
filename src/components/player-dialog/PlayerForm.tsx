@@ -83,7 +83,7 @@ export function PlayerForm({ onAddPlayer, generateDummyNames, playerCount }: Pla
         </form>
       </Form>
       
-      {playerCount === 0 && (
+      {/* {playerCount === 0 && (
         <div className="text-center py-4">
           <Button 
             variant="outline" 
@@ -94,7 +94,7 @@ export function PlayerForm({ onAddPlayer, generateDummyNames, playerCount }: Pla
             Добави тестови играчи
           </Button>
         </div>
-      )}
+      )} */}
     </div>
   );
 }

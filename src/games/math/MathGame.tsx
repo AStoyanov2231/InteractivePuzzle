@@ -759,12 +759,12 @@ export const MathGame: React.FC<MathGameProps> = ({ level, onComplete, onTimeUp,
                 Провери
               </Button>
             )}
-            <Button variant="outline" onClick={handleSolve} className="w-full">🧠 Реши</Button>
+            {/* <Button variant="outline" onClick={handleSolve} className="w-full">🧠 Реши</Button> */}
             <Button variant="outline" onClick={handleReset} className="w-full">
               <RefreshCw className="w-4 h-4 mr-2" />
               Започни отначало
             </Button>
-            {!currentTeam && (
+            {/* {!currentTeam && (
               <Button 
                 variant="outline"
                 onClick={async () => {
@@ -788,7 +788,7 @@ export const MathGame: React.FC<MathGameProps> = ({ level, onComplete, onTimeUp,
                 <Check className="w-4 h-4 mr-2" />
                 Завърши играта
               </Button>
-            )}
+            )} */}
           </div>
         </div>
       </aside>

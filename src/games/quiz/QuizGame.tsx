@@ -254,7 +254,7 @@ export const QuizGame: React.FC<QuizGameProps> = ({
                 <RefreshCw className="w-4 h-4 mr-2" />
                 Започни отначало
               </Button>
-              {!currentTeam && (
+              {/* {!currentTeam && (
                 <Button 
                   variant="outline"
                   onClick={handleCompleteGame}
@@ -263,7 +263,7 @@ export const QuizGame: React.FC<QuizGameProps> = ({
                   <Check className="w-4 h-4 mr-2" />
                   Завърши играта
                 </Button>
-              )}
+              )} */}
             </div>
           </div>
         </aside>

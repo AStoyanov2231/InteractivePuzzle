@@ -392,14 +392,14 @@ export const SpeedGame: React.FC<SpeedGameProps> = ({ level, onComplete, onTimeU
               <RefreshCw className="w-4 h-4 mr-2" />
               Започни отначало
             </Button>
-            <Button 
+            {/* <Button 
               variant="outline"
               onClick={endGame}
               className="w-full bg-green-100 hover:bg-green-200 border-green-300 text-green-700"
             >
               <Check className="w-4 h-4 mr-2" />
               Завърши играта
-            </Button>
+            </Button> */}
           </div>
         </div>
       </aside>

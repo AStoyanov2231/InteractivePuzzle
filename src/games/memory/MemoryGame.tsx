@@ -304,7 +304,7 @@ export const MemoryGame: React.FC<MemoryGameProps> = ({
                 <RefreshCw className="w-4 h-4 mr-2" />
                 Започни отначало
               </Button>
-              {!currentTeam && (
+              {/* {!currentTeam && (
                 <Button 
                   variant="outline"
                   onClick={handleCompleteGame}
@@ -313,7 +313,7 @@ export const MemoryGame: React.FC<MemoryGameProps> = ({
                   <Check className="w-4 h-4 mr-2" />
                   Завърши играта
                 </Button>
-              )}
+              )} */}
             </div>
           </div>
         </aside>
