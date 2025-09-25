@@ -340,27 +340,27 @@ const Index = () => {
               {[
                 { 
                   id: 1, 
-                  icon: "brain.png", 
+                  icon: "guess-colour.png", 
                   backgroundColor: "#E0F2FE", 
                   url: "https://sports.ue-varna.bg/game/colours.php",
                   title: "Игра с цветове"
                 },
                 { 
                   id: 2, 
-                  icon: "calculator.png", 
+                  icon: "find-word.png", 
                   backgroundColor: "#FCE7F3", 
                   url: "https://sports.ue-varna.bg/game/words.php",
                   title: "Игра с думи"
                 },
                 { 
                   id: 3, 
-                  icon: "puzzle.png", 
+                  icon: "sort-numbers.png", 
                   backgroundColor: "#F0FDF4", 
                   url: "https://sports.ue-varna.bg/game/tiles.php",
                   title: "Игра с плочки"
                 }
               ].map((item) => {
-                const imageUrl = `https://astoyanov2231.github.io/InteractivePuzzle-Assets/images/categories/${item.icon}`;
+                const imageUrl = `${import.meta.env.BASE_URL}assets/images/external-games/${item.icon}`;
                 
                 return (
                   <div
