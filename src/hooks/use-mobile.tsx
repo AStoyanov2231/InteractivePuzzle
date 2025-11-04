@@ -2,15 +2,12 @@ import * as React from "react"
 import { isMobileDevice } from "@/utils/pwaUtils"
 
 export function useIsMobile() {
-  const [isMobile, setIsMobile] = React.useState<boolean | undefined>(undefined)
+  const [isMobile, setIsMobile] = React.useState<boolean>(() => isMobileDevice())
 
   React.useEffect(() => {
     const checkMobile = () => {
       setIsMobile(isMobileDevice())
     }
-    
-    // Initial check
-    checkMobile()
     
     // Listen for orientation/resize changes
     window.addEventListener('resize', checkMobile)
@@ -22,5 +19,5 @@ export function useIsMobile() {
     }
   }, [])
 
-  return !!isMobile
+  return isMobile
 }
