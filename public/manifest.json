@@ -2,7 +2,7 @@
   "name": "Българска Платформа за Пъзели",
   "short_name": "Пъзели BG",
   "description": "Интерактивна платформа за пъзели на български език",
-  "start_url": "/InteractivePuzzle/",
+  "start_url": "/InteractivePuzzle/game/speed/1",
   "display": "standalone",
   "background_color": "#fed7aa",
   "theme_color": "#fb923c",
