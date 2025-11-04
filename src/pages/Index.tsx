@@ -13,6 +13,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { FullscreenButton } from "@/components/FullscreenButton";
 import { RequireNameToggle } from "@/components/RequireNameToggle";
 import { useToast } from "@/hooks/use-toast";
+import { isMobileDevice } from "@/utils/pwaUtils";
 
 interface Team {
   id: string;
@@ -34,10 +35,10 @@ const Index = () => {
 
   // Auto-redirect to Speed game on mobile devices
   useEffect(() => {
-    const isMobile = window.innerWidth <= 768;
+    const isMobile = isMobileDevice();
     if (isMobile) {
       // Navigate directly to speed game with auto-start
-      navigate('/game/speed/1');
+      navigate('/game/speed/1', { replace: true });
     }
   }, [navigate]);
 
